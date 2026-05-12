@@ -232,6 +232,72 @@ Return a JSON object with:
   },
 });
 
+export const analyzeSchedule = action({
+  args: {
+    apiKey: v.string(),
+    stats: v.object({
+      totalPosts: v.number(),
+      avgLength: v.number(),
+      avgScore: v.optional(v.number()),
+      toneCounts: v.any(),
+      scheduledCount: v.number(),
+      topPostSamples: v.array(v.object({
+        tone: v.string(),
+        length: v.number(),
+        score: v.optional(v.number()),
+        preview: v.string(),
+      })),
+    }),
+  },
+  handler: async (_ctx, args) => {
+    const { stats, apiKey } = args;
+
+    const systemPrompt = `You are an expert LinkedIn growth strategist. Analyze a creator's content library and recommend a concrete posting schedule.
+Return ONLY a valid JSON object — no markdown, no code fences, just raw JSON.`;
+
+    const userMessage = `Analyze this LinkedIn content library and recommend a posting schedule:
+
+Total posts in library: ${stats.totalPosts}
+Average post length: ${stats.avgLength} characters
+Average AI score: ${stats.avgScore !== undefined ? `${stats.avgScore}/10` : 'not scored yet'}
+Scheduled posts: ${stats.scheduledCount}
+Tone breakdown: ${JSON.stringify(stats.toneCounts)}
+
+Top post samples:
+${stats.topPostSamples.map((p, i) => `${i + 1}. [${p.tone}] ${p.score !== undefined ? `Score: ${p.score}/10 ` : ''}(${p.length} chars): "${p.preview}"`).join('\n')}
+
+Return a JSON object with:
+- "frequency": number of posts recommended per week (integer 1-7)
+- "frequencyReason": 1-2 sentence explanation for the frequency
+- "bestDays": array of 2-4 recommended day names (e.g. ["Tuesday", "Thursday", "Saturday"])
+- "bestDaysReason": 1 sentence why these days
+- "toneBalance": array of objects, each with "tone" (string), "currentPct" (number 0-100), "targetPct" (number 0-100), "action" (string: "increase"/"decrease"/"maintain"), "tip" (string: 1 sentence advice)
+- "tips": array of 3-5 actionable string tips specific to this person's content
+- "summary": 2-3 sentence overall assessment of their content strategy`;
+
+    const raw = await callClaude(apiKey, systemPrompt, userMessage, 1500);
+
+    let result: {
+      frequency: number;
+      frequencyReason: string;
+      bestDays: string[];
+      bestDaysReason: string;
+      toneBalance: Array<{ tone: string; currentPct: number; targetPct: number; action: string; tip: string }>;
+      tips: string[];
+      summary: string;
+    };
+    try {
+      result = JSON.parse(raw);
+    } catch {
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("Failed to parse schedule analysis from Claude");
+      result = JSON.parse(match[0]);
+    }
+
+    return result;
+  },
+});
+
 export const generateVariants = action({
   args: {
     apiKey: v.string(),

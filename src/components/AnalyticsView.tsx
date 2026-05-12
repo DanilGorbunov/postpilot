@@ -34,9 +34,22 @@ function normalizedTone(tone: string): string {
 
 const KNOWN_TONES = ['builder', 'insight', 'story', 'opinion', 'tactical'];
 
+interface ScheduleResult {
+  frequency: number;
+  frequencyReason: string;
+  bestDays: string[];
+  bestDaysReason: string;
+  toneBalance: Array<{ tone: string; currentPct: number; targetPct: number; action: string; tip: string }>;
+  tips: string[];
+  summary: string;
+}
+
 export default function AnalyticsView({ user, prefs, demoMode }: Props) {
   const [scoring, setScoring] = useState(false);
   const [scoringProgress, setScoringProgress] = useState(0);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
+  const [analyzeError, setAnalyzeError] = useState('');
 
   const posts = useQuery(
     api.posts.getPosts,
@@ -48,6 +61,7 @@ export default function AnalyticsView({ user, prefs, demoMode }: Props) {
   );
 
   const scorePostAction = useAction(api.ai.scorePost);
+  const analyzeScheduleAction = useAction(api.ai.analyzeSchedule);
   const updatePost = useMutation(api.posts.updatePost);
 
   const allPosts = demoMode ? [] : (posts ?? []);
@@ -158,6 +172,40 @@ export default function AnalyticsView({ user, prefs, demoMode }: Props) {
       setScoringProgress(Math.round((done / unscored.length) * 100));
     }
     setScoring(false);
+  };
+
+  const handleAnalyze = async () => {
+    if (!hasApiKey || !prefs?.apikey) return;
+    setAnalyzing(true);
+    setAnalyzeError('');
+    try {
+      const topSamples = [...allPosts]
+        .sort((a, b) => ((b as any).score ?? 0) - ((a as any).score ?? 0))
+        .slice(0, 5)
+        .map(p => ({
+          tone: p.tone,
+          length: p.content.length,
+          score: (p as any).score as number | undefined,
+          preview: p.content.slice(0, 80),
+        }));
+
+      const result = await analyzeScheduleAction({
+        apiKey: prefs.apikey,
+        stats: {
+          totalPosts,
+          avgLength,
+          avgScore: avgScore ?? undefined,
+          toneCounts,
+          scheduledCount: scheduled.length,
+          topPostSamples: topSamples,
+        },
+      });
+      setScheduleResult(result as ScheduleResult);
+    } catch (e) {
+      setAnalyzeError(e instanceof Error ? e.message : 'Analysis failed');
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   // --- Styles ---
@@ -495,7 +543,7 @@ export default function AnalyticsView({ user, prefs, demoMode }: Props) {
       {/* Recommendations */}
       {recommendations.length > 0 && (
         <div style={sectionStyle}>
-          <div style={sectionTitle}>Recommendations</div>
+          <div style={sectionTitle}>Quick Tips</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {recommendations.map((tip, i) => (
               <div
@@ -517,6 +565,178 @@ export default function AnalyticsView({ user, prefs, demoMode }: Props) {
           </div>
         </div>
       )}
+
+      {/* AI Schedule Analysis */}
+      <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: scheduleResult ? 20 : 0 }}>
+          <div style={{ ...sectionTitle, marginBottom: 0 }}>AI Posting Plan</div>
+          {hasApiKey ? (
+            <button
+              style={{
+                padding: '7px 16px',
+                background: analyzing ? 'var(--s3)' : 'var(--ac)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--r)',
+                fontFamily: 'var(--head)',
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: analyzing ? 'not-allowed' : 'pointer',
+                opacity: analyzing ? 0.8 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+              onClick={handleAnalyze}
+              disabled={analyzing}
+            >
+              {analyzing ? 'Analyzing...' : scheduleResult ? 'Re-analyze' : '✦ Analyze with AI'}
+            </button>
+          ) : (
+            <span style={{ fontSize: 12, color: 'var(--t3)' }}>Add API key in Settings to enable</span>
+          )}
+        </div>
+
+        {analyzeError && (
+          <div style={{ fontSize: 13, color: 'var(--err)', padding: '8px 0' }}>{analyzeError}</div>
+        )}
+
+        {!scheduleResult && !analyzing && (
+          <div style={{ fontSize: 13, color: 'var(--t3)', paddingTop: hasApiKey ? 14 : 0, lineHeight: 1.6 }}>
+            {hasApiKey
+              ? 'Click "Analyze with AI" to get a personalized posting schedule based on your content library.'
+              : 'Connect your Anthropic API key in Settings to get a personalized posting schedule.'}
+          </div>
+        )}
+
+        {analyzing && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0', color: 'var(--t3)', fontSize: 13 }}>
+            <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>◑</span>
+            Claude is analyzing your content...
+          </div>
+        )}
+
+        {scheduleResult && !analyzing && (
+          <div>
+            {/* Summary */}
+            <div style={{
+              padding: '12px 16px',
+              background: 'rgba(107,79,255,.06)',
+              border: '1px solid rgba(107,79,255,.15)',
+              borderRadius: 'var(--r)',
+              fontSize: 13.5,
+              color: 'var(--t2)',
+              lineHeight: 1.6,
+              marginBottom: 20,
+            }}>
+              {scheduleResult.summary}
+            </div>
+
+            {/* Frequency + Best Days */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+              <div style={{ background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 'var(--r)', padding: '14px 16px' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+                  Recommended Frequency
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 36, fontWeight: 800, color: 'var(--ac2)', fontFamily: 'var(--head)', lineHeight: 1 }}>
+                    {scheduleResult.frequency}×
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--t3)' }}>per week</span>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.5 }}>{scheduleResult.frequencyReason}</div>
+              </div>
+
+              <div style={{ background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 'var(--r)', padding: '14px 16px' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+                  Best Days to Post
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {scheduleResult.bestDays.map(day => (
+                    <span key={day} style={{
+                      padding: '4px 10px',
+                      background: 'rgba(107,79,255,.15)',
+                      color: 'var(--ac2)',
+                      border: '1px solid rgba(107,79,255,.3)',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}>
+                      {day}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.5 }}>{scheduleResult.bestDaysReason}</div>
+              </div>
+            </div>
+
+            {/* Tone Balance */}
+            {scheduleResult.toneBalance.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 12 }}>
+                  Recommended Tone Mix
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {scheduleResult.toneBalance.map(tb => {
+                    const color = toneColor(tb.tone);
+                    const actionColor = tb.action === 'increase' ? '#10b981' : tb.action === 'decrease' ? '#ef4444' : '#6b4fff';
+                    const actionIcon = tb.action === 'increase' ? '↑' : tb.action === 'decrease' ? '↓' : '→';
+                    return (
+                      <div key={tb.tone} style={{ background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 'var(--r)', padding: '10px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span style={{
+                            padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                            background: `${color}22`, color, border: `1px solid ${color}44`,
+                            textTransform: 'uppercase', letterSpacing: '.3px',
+                          }}>
+                            {tb.tone}
+                          </span>
+                          <span style={{ fontSize: 12, color: 'var(--t3)' }}>
+                            now {tb.currentPct}% → target {tb.targetPct}%
+                          </span>
+                          <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: actionColor }}>
+                            {actionIcon} {tb.action}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <div style={{ flex: 1, height: 6, background: 'var(--s3)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
+                            <div style={{ position: 'absolute', height: '100%', width: `${tb.currentPct}%`, background: color, opacity: 0.5, borderRadius: 3, transition: 'width .4s' }} />
+                            <div style={{ position: 'absolute', top: 0, height: '100%', width: 2, left: `${tb.targetPct}%`, background: actionColor, borderRadius: 1 }} />
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 6, lineHeight: 1.5 }}>{tb.tip}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Actionable Tips */}
+            {scheduleResult.tips.length > 0 && (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 12 }}>
+                  Action Items
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {scheduleResult.tips.map((tip, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <span style={{
+                        width: 20, height: 20, borderRadius: '50%', background: 'rgba(107,79,255,.15)',
+                        color: 'var(--ac2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 1,
+                      }}>
+                        {i + 1}
+                      </span>
+                      <span style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.55 }}>{tip}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
