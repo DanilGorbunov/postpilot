@@ -1,4 +1,5 @@
-import { useState, CSSProperties } from 'react';
+import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { setSession, type User } from '../lib/auth';
@@ -8,7 +9,7 @@ interface Props {
   onSuccess: (user: User, isNew: boolean) => void;
 }
 
-const s: Record<string, CSSProperties> = {
+const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
   root: { minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 },
   card: { background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 'var(--r2)', padding: 40, width: '100%', maxWidth: 420, animation: 'fadeIn .25s ease' },
   backBtn: { background: 'none', border: 'none', color: 'var(--t3)', fontSize: 13, cursor: 'pointer', padding: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 6 },

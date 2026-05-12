@@ -1,4 +1,5 @@
-import { useState, CSSProperties } from 'react';
+import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
@@ -16,7 +17,7 @@ const DEMO_IDEAS = [
   { _id: 'di5', content: 'Why I stopped chasing virality and what happened', source: 'personal', used: true },
 ];
 
-const s: Record<string, CSSProperties> = {
+const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
   root: {
     padding: 24,
     animation: 'fadeIn .2s ease',

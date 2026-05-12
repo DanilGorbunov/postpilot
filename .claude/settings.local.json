@@ -3,7 +3,18 @@
     "allow": [
       "Bash(python3 -m http.server 3002)",
       "Bash(git checkout *)",
-      "Bash(git add *)"
+      "Bash(npm install *)",
+      "Bash(npx convex *)",
+      "Bash(kill %1)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(git add *)",
+      "Bash(sed -i '' 's/Generate 9 Posts/Generate 18 Posts/g' /Users/chrisarnold/AI_Projects/postpilot/src/components/PostsView.tsx)",
+      "Bash(sed -i '' 's/onClick={handleGenerate}$/onClick={\\(\\) => handleGenerate\\(18\\)}/g' /Users/chrisarnold/AI_Projects/postpilot/src/components/PostsView.tsx)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

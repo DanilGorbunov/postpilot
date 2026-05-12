@@ -74,15 +74,16 @@ Tech stack: ${profile.stack ?? ""}
 ${pillarsText}
 
 Each post should:
-- Start with a strong hook
-- Be 150-300 words
+- Start with a strong hook (first line creates curiosity or tension)
+- Be 200-400 words with concrete details, numbers, and specifics
 - Include a clear call to action or reflection question
+- End with 3-5 relevant hashtags on a new line
 - Feel authentic and human, not corporate
 
 Return a JSON array with ${count} posts, each having:
-- "tone": the tone used (e.g. "Storytelling", "Educational", "Motivational")
-- "angle": a brief description of the angle/topic (1 sentence)
-- "content": the full post text`;
+- "tone": exactly one of: "builder", "insight", "story", "opinion", "tactical"
+- "angle": a brief description of the angle/topic (1 sentence, no underscores)
+- "content": the full post text including hashtags at the end`;
 
     const raw = await callClaude(apiKey, systemPrompt, userMessage, 4096);
 

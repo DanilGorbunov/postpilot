@@ -1,11 +1,12 @@
-import { useState, CSSProperties } from 'react';
-import { useMutation, useAction } from 'convex/react';
+import { useState } from 'react';
+import type { CSSProperties } from 'react';
+import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
 
 interface Props {
   user: User;
-  onDone: () => void;
+  onDone: (hasApiKey: boolean) => void;
 }
 
 const TONES = ['Professional', 'Storytelling', 'Educational', 'Motivational', 'Conversational', 'Provocative'];
@@ -17,7 +18,7 @@ const LANGUAGES = [
   { code: 'Spanish', label: 'ES' },
 ];
 
-const s: Record<string, CSSProperties> = {
+const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
   root: {
     minHeight: '100vh',
     background: 'var(--bg)',
@@ -230,8 +231,6 @@ export default function OnboardingView({ user, onDone }: Props) {
   const [site, setSite] = useState('');
 
   const upsertPrefs = useMutation(api.users.upsertPrefs);
-  const generatePostsAction = useAction(api.ai.generatePosts);
-  const createManyPosts = useMutation(api.posts.createManyPosts);
 
   const toggleTone = (tone: string) => {
     setSelectedTones(prev =>
@@ -258,38 +257,11 @@ export default function OnboardingView({ user, onDone }: Props) {
         linkedin: linkedin || undefined,
         site: site || undefined,
       });
-
-      if (apikey?.startsWith('sk-')) {
-        const profile = [
-          name && `Name: ${name}`,
-          role && `Role: ${role}`,
-          bio && `Bio: ${bio}`,
-          projects && `Projects: ${projects}`,
-          stack && `Stack: ${stack}`,
-          audience && `Audience: ${audience}`,
-          avoid && `Avoid: ${avoid}`,
-        ].filter(Boolean).join('\n');
-
-        const generated = await generatePostsAction({
-          userId: user._id as any,
-          apiKey: apikey,
-          profile,
-          lang: lang || 'English',
-          count: 18,
-        });
-
-        if (generated?.length) {
-          await createManyPosts({
-            userId: user._id as any,
-            posts: generated,
-          });
-        }
-      }
     } catch {
-      // continue even if generation fails
+      // continue even if prefs save fails
     } finally {
       setSaving(false);
-      onDone();
+      onDone(!!apikey?.startsWith('sk-'));
     }
   };
 
@@ -508,7 +480,7 @@ export default function OnboardingView({ user, onDone }: Props) {
               onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'var(--ac2)'; }}
               onMouseLeave={e => (e.currentTarget.style.background = 'var(--ac)')}
             >
-              {saving ? (apikey?.startsWith('sk-') ? '✦ Generating 18 posts...' : 'Saving...') : apikey?.startsWith('sk-') ? '✦ Done & Generate 18 Posts' : 'Done'}
+              {saving ? 'Saving...' : 'Done →'}
             </button>
           )}
         </div>

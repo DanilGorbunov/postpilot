@@ -1,4 +1,4 @@
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
@@ -43,7 +43,7 @@ const DEMO_SCHEDULED = [
   },
 ];
 
-const s: Record<string, CSSProperties> = {
+const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
   root: {
     padding: 24,
     animation: 'fadeIn .2s ease',
