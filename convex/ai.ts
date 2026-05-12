@@ -59,8 +59,15 @@ export const generatePosts = action({
 
     const systemPrompt = `You are an expert LinkedIn content strategist. Generate engaging LinkedIn posts for a professional.
 Write in ${lang}.
-Return ONLY a valid JSON array of objects with exactly these keys: "tone", "angle", "content".
-No markdown, no code fences, no explanation — just the raw JSON array.`;
+Use this exact format for each post, separated by ===:
+
+TONE: <one of: builder, insight, story, opinion, tactical>
+ANGLE: <brief topic description, one sentence>
+CONTENT:
+<full post text with hashtags at the end>
+===
+
+No extra commentary, no numbering, no markdown outside the format.`;
 
     const buildMessage = (n: number) => `Create ${n} LinkedIn posts for this person:
 Name: ${profile.name ?? "Unknown"}
@@ -78,21 +85,21 @@ Each post should:
 - Be 200-400 words with concrete details, numbers, and specifics
 - Include a clear call to action or reflection question
 - End with 3-5 relevant hashtags on a new line
-- Feel authentic and human, not corporate
-
-Return a JSON array with ${n} posts, each having:
-- "tone": exactly one of: "builder", "insight", "story", "opinion", "tactical"
-- "angle": a brief description of the angle/topic (1 sentence, no underscores)
-- "content": the full post text including hashtags at the end`;
+- Feel authentic and human, not corporate`;
 
     const parseRaw = (raw: string): Array<{ tone: string; angle: string; content: string }> => {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        const match = raw.match(/\[[\s\S]*\]/);
-        if (!match) throw new Error("Failed to parse posts from Claude response");
-        return JSON.parse(match[0]);
-      }
+      const blocks = raw.split(/\n===\n?|\n?===\n/).filter(b => b.trim());
+      return blocks.map(block => {
+        const toneMatch = block.match(/^TONE:\s*(.+)$/m);
+        const angleMatch = block.match(/^ANGLE:\s*(.+)$/m);
+        const contentMatch = block.match(/^CONTENT:\s*\n([\s\S]+)$/m);
+        if (!toneMatch || !angleMatch || !contentMatch) return null;
+        return {
+          tone: toneMatch[1].trim().toLowerCase(),
+          angle: angleMatch[1].trim(),
+          content: contentMatch[1].trim(),
+        };
+      }).filter((p): p is { tone: string; angle: string; content: string } => p !== null);
     };
 
     const BATCH = 6;
@@ -104,6 +111,7 @@ Return a JSON array with ${n} posts, each having:
       allPosts.push(...parseRaw(raw));
     }
 
+    if (allPosts.length === 0) throw new Error("Failed to parse posts from Claude response");
     return allPosts;
   },
 });
