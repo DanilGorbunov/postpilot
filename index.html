@@ -1973,9 +1973,26 @@ Sheets AI — описав "budget tracker для SaaS" → отримав го�
 ];
 
 // ── CARD PHOTOS ───────────────────────────────────────────────────────────────
-function postKeyword(angle) {
-  const word = (angle||'').split(/[–—\-]/)[0].replace(/[^a-zA-Z0-9 ]/g,'').trim().split(' ')[0];
-  return encodeURIComponent(word || 'technology');
+function postKeyword(angle, text) {
+  const t = (text||'').toLowerCase();
+  // Detect topic from post text first (most accurate)
+  if (/claude|anthropic|llm|language.model/.test(t))      return 'artificial-intelligence,technology';
+  if (/figma|ui.kit|component|wireframe/.test(t))         return 'interface,design';
+  if (/canva/.test(t))                                    return 'graphic-design,creative';
+  if (/linkedin/.test(t))                                 return 'professional,networking';
+  if (/startup|mvp|ідей|founder|засновник/.test(t))       return 'startup,entrepreneur';
+  if (/\bai\b|нейромереж|штучний/.test(t))               return 'artificial-intelligence,robot';
+  if (/code|coding|програмуван|developer|github/.test(t)) return 'programming,code';
+  if (/дизайн|design|ux|продукт|product/.test(t))         return 'design,product';
+  if (/data|аналіт|метрик|analytics/.test(t))             return 'analytics,data';
+  if (/gpt|chatgpt|openai/.test(t))                       return 'technology,ai';
+  if (/команда|team|colleague/.test(t))                   return 'team,office';
+  if (/marketing|маркетинг/.test(t))                      return 'marketing,business';
+  if (/інвест|invest|funding/.test(t))                    return 'investment,finance';
+  if (/career|кар'єра|зростан/.test(t))                  return 'career,growth';
+  // Fall back to angle words (fix underscore → comma)
+  const words = (angle||'technology').replace(/_/g,',').split(',').slice(0,2).join(',');
+  return words || 'technology,business';
 }
 function extractVideoInfo(text) {
   const m = (text||'').match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([\w-]+)|https?:\/\/youtu\.be\/([\w-]+)/);
@@ -2333,7 +2350,7 @@ function renderPosts() {
   Q('#posts-grid').innerHTML = vis.map(p => {
     const i = src.indexOf(p);
     const isSch = scheduled.some(s => s.id === i);
-    const kw = postKeyword(p.a);
+    const kw = postKeyword(p.a, p.x);
     const vid = extractVideoInfo(p.x);
     const media = vid
       ? `<a class="card-img-wrap" href="${vid.url}" target="_blank" rel="noopener">
