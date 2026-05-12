@@ -5,16 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PostPilot — AI LinkedIn Posts</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800;900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script>(function(){var t=localStorage.getItem('pp_theme')||'dark';document.documentElement.setAttribute('data-theme',t)})();</script>
 <style>
 :root{
   --bg:#06060a;--s1:#0d0d14;--s2:#12121c;--s3:#1a1a26;
-  --bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.14);
-  --t1:#eae6ff;--t2:#8884a8;--t3:#3d3a52;
+  --bd:rgba(255,255,255,.12);--bd2:rgba(255,255,255,.22);
+  --t1:#f0ecff;--t2:#b3afd1;--t3:#6e6a8a;
   --ac:#6b4fff;--ac2:#8b6fff;--ac3:rgba(107,79,255,.15);
   --ok:#10b981;--ok2:rgba(16,185,129,.12);
   --warn:#f59e0b;--err:#ef4444;--li:#0a66c2;
   --head:'Syne',sans-serif;--mono:'DM Mono',monospace;
   --r:8px;--r2:12px;
+}
+[data-theme="light"]{
+  --bg:#f5f4ff;--s1:#ffffff;--s2:#eeeaff;--s3:#e0dbff;
+  --bd:rgba(0,0,0,.1);--bd2:rgba(0,0,0,.18);
+  --t1:#100d20;--t2:#4a456b;--t3:#8884a8;
+  --ac:#6b4fff;--ac2:#8b6fff;--ac3:rgba(107,79,255,.12);
+  --ok:#10b981;--ok2:rgba(16,185,129,.1);
+  --warn:#d97706;--err:#dc2626;--li:#0a66c2;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -203,6 +212,12 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 .sp-email{font-size:10px;color:var(--t3)}
 .sp-logout{margin-left:auto;font-size:10px;color:var(--t3);cursor:pointer}
 .sp-logout:hover{color:var(--err)}
+.theme-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:4px 0}
+.theme-toggle-lbl{font-size:10px;color:var(--t3);letter-spacing:.5px}
+.toggle-sw{width:36px;height:20px;border-radius:20px;background:var(--s3);border:1px solid var(--bd2);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;padding:0}
+.toggle-sw.light{background:var(--ac)}
+.toggle-sw::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle-sw.light::after{transform:translateX(16px)}
 
 /* main area */
 .main-area{overflow-y:auto;display:flex;flex-direction:column}
@@ -591,7 +606,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
       <div class="sidebar-brand">
         <div>
           <div class="brand-logo">Post<em>Pilot</em></div>
-          <div class="brand-user" id="sb-user-name">Завантаження...</div>
+          <div class="brand-user" id="sb-user-name" data-i18n="app.loading">Loading...</div>
         </div>
       </div>
       <div class="sidebar-nav">
@@ -604,6 +619,10 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
         <div class="nav-item" onclick="switchTab('settings',this)"><span class="ni">⚙</span> <span data-i18n="app.nav.settings">Settings</span></div>
       </div>
       <div class="sidebar-footer">
+        <div class="theme-toggle">
+          <span class="theme-toggle-lbl" id="theme-lbl">🌙 Dark</span>
+          <button class="toggle-sw" id="theme-sw" onclick="toggleTheme()" title="Toggle theme"></button>
+        </div>
         <div class="sidebar-profile">
           <div class="sp-av" id="sp-av">D</div>
           <div><div class="sp-name" id="sp-name">Danil</div><div class="sp-email" id="sp-email">...</div></div>
@@ -672,17 +691,17 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
         <!-- NEWS TAB -->
         <div class="tab-panel" id="panel-news">
           <div class="news-header-row">
-            <div class="news-header-title">Пости з новин</div>
+            <div class="news-header-title" data-i18n="app.news.title">Posts from news</div>
           </div>
           <div class="topic-btns">
-            <button class="topic-btn-item" onclick="genNews('ai')" id="tnb-ai">🤖 AI та LLM</button>
-            <button class="topic-btn-item" onclick="genNews('design')" id="tnb-design">🎨 Product Design</button>
-            <button class="topic-btn-item" onclick="genNews('tech')" id="tnb-tech">💻 Технології</button>
-            <button class="topic-btn-item" onclick="genNews('saas')" id="tnb-saas">🚀 SaaS & Startup</button>
-            <button class="topic-btn-item" onclick="genNews('all')" id="tnb-all">⚡ Все одразу</button>
+            <button class="topic-btn-item" onclick="genNews('ai')" id="tnb-ai" data-i18n="app.news.btn.ai">🤖 AI &amp; LLM</button>
+            <button class="topic-btn-item" onclick="genNews('design')" id="tnb-design" data-i18n="app.news.btn.design">🎨 Product Design</button>
+            <button class="topic-btn-item" onclick="genNews('tech')" id="tnb-tech" data-i18n="app.news.btn.tech">💻 Technology</button>
+            <button class="topic-btn-item" onclick="genNews('saas')" id="tnb-saas" data-i18n="app.news.btn.saas">🚀 SaaS &amp; Startup</button>
+            <button class="topic-btn-item" onclick="genNews('all')" id="tnb-all" data-i18n="app.news.btn.all">⚡ All at once</button>
           </div>
           <div class="news-grid" id="news-grid">
-            <div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">📰</span>Обери тему вище — Claude знайде свіжі новини і напише пости від твого імені</div>
+            <div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">📰</span><span data-i18n="app.news.empty">Choose a topic above — Claude will find fresh news and write posts on your behalf</span></div>
           </div>
         </div>
 
@@ -695,27 +714,27 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
         <div class="tab-panel" id="panel-settings">
           <div class="settings-wrap">
             <div class="settings-section">
-              <div class="settings-section-title">👤 Профіль</div>
-              <div class="frow"><label>Ім'я</label><input id="s-name" placeholder="Danil Gorbunov"></div>
-              <div class="frow"><label>Роль</label><input id="s-role" placeholder="Product Designer + AI Builder"></div>
-              <div class="frow"><label>Місто</label><input id="s-location" placeholder="Братислава, Словаччина"></div>
-              <div class="frow"><label>Про тебе</label><textarea id="s-bio"></textarea></div>
-              <div class="frow"><label>Проекти</label><textarea id="s-projects"></textarea></div>
+              <div class="settings-section-title" data-i18n="settings.profile">👤 Profile</div>
+              <div class="frow"><label data-i18n="settings.label.name">Name</label><input id="s-name" placeholder="Danil Gorbunov"></div>
+              <div class="frow"><label data-i18n="settings.label.role">Role</label><input id="s-role" placeholder="Product Designer + AI Builder"></div>
+              <div class="frow"><label data-i18n="settings.label.location">City</label><input id="s-location" placeholder="Братислава, Словаччина"></div>
+              <div class="frow"><label data-i18n="settings.label.bio">About you</label><textarea id="s-bio"></textarea></div>
+              <div class="frow"><label data-i18n="settings.label.projects">Projects</label><textarea id="s-projects"></textarea></div>
             </div>
             <div class="settings-section">
-              <div class="settings-section-title">🎨 Стиль постів</div>
-              <div class="frow"><label>Чого уникати</label><input id="s-avoid"></div>
-              <div class="frow"><label>Приклад твого стилю</label><textarea id="s-example"></textarea></div>
-              <div class="frow"><label>Стек і інструменти</label><input id="s-stack"></div>
+              <div class="settings-section-title" data-i18n="settings.style">🎨 Post Style</div>
+              <div class="frow"><label data-i18n="settings.label.avoid">What to avoid</label><input id="s-avoid"></div>
+              <div class="frow"><label data-i18n="settings.label.example">Example of your style</label><textarea id="s-example"></textarea></div>
+              <div class="frow"><label data-i18n="settings.label.stack">Stack &amp; tools</label><input id="s-stack"></div>
             </div>
             <div class="settings-section">
-              <div class="settings-section-title">🔑 API та інтеграції</div>
-              <div class="frow"><label>Anthropic API Key</label><input type="password" id="s-apikey" placeholder="sk-ant-..." oninput="onApiKeyChange()"></div>
-              <div class="frow"><label>LinkedIn URL</label><input id="s-linkedin"></div>
-              <div class="frow"><label>LinkedIn Access Token</label><input type="password" id="s-litoken"></div>
-              <div class="frow"><label>Сайт</label><input id="s-site"></div>
+              <div class="settings-section-title" data-i18n="settings.api">🔑 API &amp; Integrations</div>
+              <div class="frow"><label data-i18n="settings.label.apikey">Anthropic API Key</label><input type="password" id="s-apikey" placeholder="sk-ant-..." oninput="onApiKeyChange()"></div>
+              <div class="frow"><label data-i18n="settings.label.linkedin">LinkedIn URL</label><input id="s-linkedin"></div>
+              <div class="frow"><label data-i18n="settings.label.litoken">LinkedIn Access Token</label><input type="password" id="s-litoken"></div>
+              <div class="frow"><label data-i18n="settings.label.site">Website</label><input id="s-site"></div>
             </div>
-            <button class="btn-save-settings" onclick="saveSettings()">Зберегти налаштування</button>
+            <button class="btn-save-settings" onclick="saveSettings()" data-i18n="settings.save">Save settings</button>
           </div>
         </div>
       </div>
@@ -1926,6 +1945,7 @@ async function init() {
   showView('v-app');
   updateAppUI();
   renderPosts();
+  initThemeUI();
 }
 
 async function loadAppState() {
@@ -2580,6 +2600,23 @@ async function publishToLinkedIn(text) {
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
+function toggleTheme(){
+  const curr=document.documentElement.getAttribute('data-theme')||'dark';
+  const next=curr==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',next);
+  const sw=document.getElementById('theme-sw');
+  const lbl=document.getElementById('theme-lbl');
+  if(sw) sw.classList.toggle('light',next==='light');
+  if(lbl) lbl.textContent=next==='light'?'☀️ Light':'🌙 Dark';
+  localStorage.setItem('pp_theme',next);
+}
+function initThemeUI(){
+  const curr=document.documentElement.getAttribute('data-theme')||'dark';
+  const sw=document.getElementById('theme-sw');
+  const lbl=document.getElementById('theme-lbl');
+  if(sw) sw.classList.toggle('light',curr==='light');
+  if(lbl) lbl.textContent=curr==='light'?'☀️ Light':'🌙 Dark';
+}
 function Q(s) { return document.querySelector(s); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 let tt;
