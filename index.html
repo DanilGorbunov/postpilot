@@ -393,6 +393,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
     <nav class="land-nav">
       <div class="land-logo">Post<em>Pilot</em></div>
       <div class="nav-btns">
+        <button class="btn-ghost-sm" onclick="toggleTheme()" id="land-theme-btn" title="Toggle theme">🌙</button>
         <button class="btn-ghost-sm lang-toggle" onclick="switchUiLang()">🇺🇦 UA</button>
         <button class="btn-ghost-sm" onclick="showAuth('login')" data-i18n="nav.login">Log In</button>
         <button class="btn-ac-sm" onclick="showAuth('register')" data-i18n="nav.signup">Start for Free</button>
@@ -1937,6 +1938,8 @@ function loadSync(key, def = null) { try { const r = localStorage.getItem('pp_'+
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init() {
+  uiLang = loadSync('uiLang', 'en');
+  applyLang(uiLang);
   USER = loadSync('user', null);
   if (!USER) { showView('v-landing'); return; }
   PREFS = loadSync('prefs', {});
@@ -1976,9 +1979,9 @@ function switchAuthTab(tab) {
 function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
-  if (!email) { toast('Введи email', 'err'); return; }
+  if (!email) { toast(t('toast.fill.email'), 'err'); return; }
   USER = loadSync('user_'+email, null);
-  if (!USER) { toast('Акаунт не знайдено. Зареєструйся.', 'err'); return; }
+  if (!USER) { toast(t('toast.user.notfound'), 'err'); return; }
   saveSync('user', USER);
   PREFS = loadSync('prefs_'+email, {});
   if (!PREFS.name) { showView('v-onboard'); } else { loadAppState(); showView('v-app'); updateAppUI(); renderPosts(); }
@@ -1988,12 +1991,12 @@ function demoLogin() {
   PREFS = { name:'Danil Gorbunov', role:'Product Designer + AI Builder', location:'Bratislava', bio:'Solo builder який будує AI-продукти від дизайну до деплою.', projects:'Fonitix — AI-агент для ресторанів\nvocab-app — SM-2 flashcard система\nAI Lab — Claude Code environment', stack:'Claude Code, Cursor, Next.js, Supabase, Vercel', audience:'Product designers, AI builders', tone:'friendly', lang:'uk', apikey:'', length:'mix', avoid:'хайп без фактів', linkedin:'https://linkedin.com/in/danilgorbunov', site:'https://danilgorbunov.com' };
   saveSync('user', USER);
   loadAppState(); showView('v-app'); updateAppUI(); renderPosts();
-  toast('Ласкаво просимо до демо!', 'ok');
+  toast(t('toast.welcome.demo'), 'ok');
 }
 function doRegister() {
   const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
-  if (!name || !email) { toast('Заповни ім\'я і email', 'err'); return; }
+  if (!name || !email) { toast(t('toast.fill.fields'), 'err'); return; }
   USER = { name, email };
   saveSync('user', USER);
   saveSync('user_'+email, USER);
@@ -2004,7 +2007,7 @@ function doLogout() {
   saveSync('user', null);
   USER = null; PREFS = {};
   showView('v-landing');
-  toast('До зустрічі!');
+  toast(t('toast.logout'));
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────────
@@ -2030,9 +2033,9 @@ function setObStep(n) {
     if (i+1 < n) dot.innerHTML = '✓';
     else dot.innerHTML = i+1;
   });
-  document.getElementById('ob-step-indicator').textContent = `Крок ${n} з ${OB_STEPS}`;
+  document.getElementById('ob-step-indicator').textContent = t('ob.step.indicator', { n });
   document.getElementById('ob-back-btn').style.visibility = n > 1 ? 'visible' : 'hidden';
-  document.getElementById('ob-next-btn').textContent = n === OB_STEPS ? 'Готово →' : 'Далі →';
+  document.getElementById('ob-next-btn').textContent = n === OB_STEPS ? t('ob.done') : t('ob.next');
 }
 
 function toggleTopic(el) { el.classList.toggle('on'); }
@@ -2062,7 +2065,7 @@ function finishOnboarding() {
   showView('v-app');
   updateAppUI();
   renderPosts();
-  toast('🎉 Профіль збережено! Ласкаво просимо до PostPilot!', 'ok');
+  toast(t('toast.profile.saved'), 'ok');
 }
 
 // ── APP UI ────────────────────────────────────────────────────────────────────
@@ -2119,7 +2122,7 @@ function saveSettings() {
   saveSync('prefs', PREFS);
   if (USER?.email) saveSync('prefs_'+USER.email, PREFS);
   updateAppUI();
-  toast('✓ Налаштування збережено', 'ok');
+  toast(t('toast.settings.saved'), 'ok');
 }
 
 // ── TABS ──────────────────────────────────────────────────────────────────────
@@ -2128,7 +2131,7 @@ function switchTab(name, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
   Q('#panel-' + name).classList.add('active');
   el.classList.add('on');
-  Q('#topbar-title').textContent = {posts:'Всі пости', scheduled:'Заплановані', news:'З новин', deleted:'Видалені', settings:'Налаштування'}[name] || name;
+  Q('#topbar-title').textContent = {posts:t('app.nav.posts'), scheduled:t('app.nav.scheduled'), news:t('app.nav.news'), deleted:t('app.nav.deleted'), settings:t('app.nav.settings')}[name] || name;
   Q('#filter-bar').style.display = name === 'posts' ? 'flex' : 'none';
   if (name === 'scheduled') renderScheduled();
   if (name === 'deleted') renderDeleted();
@@ -2150,18 +2153,18 @@ function renderPosts() {
       <div class="card-head">
         <span class="card-num">${i+1}</span>
         <span class="tone-tag t-${p.t}">${p.t}</span>
-        ${isSch ? '<span class="sch-badge">завтра</span>' : ''}
+        ${isSch ? `<span class="sch-badge">${t('post.tomorrow.off').replace('+','').trim()}</span>` : ''}
         <span class="card-angle">${p.a}</span>
       </div>
       <div class="card-body">${esc(p.x)}</div>
       <div class="card-foot">
-        <span class="card-chars">${p.x.length} симв</span>
+        <span class="card-chars">${p.x.length} ${t('post.chars')}</span>
         <button class="btn-card btn-del" onclick="delPost(${i})">✕</button>
-        <button class="btn-card btn-sch${isSch?' on':''}" onclick="schedPost(${i})">${isSch?'✓':'+'} завтра</button>
-        <button class="btn-card btn-copy-card" onclick="copyPost(${i})">Копіювати</button>
+        <button class="btn-card btn-sch${isSch?' on':''}" onclick="schedPost(${i})">${isSch ? t('post.tomorrow.on') : t('post.tomorrow.off')}</button>
+        <button class="btn-card btn-copy-card" onclick="copyPost(${i})">${t('post.copy.btn')}</button>
       </div>
     </div>`;
-  }).join('') || '<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">✦</span>Постів не знайдено</div>';
+  }).join('') || `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">✦</span>${t('post.empty')}</div>`;
   updateBadges();
 }
 
@@ -2190,7 +2193,7 @@ function delPost(i) {
   if (card) { card.style.opacity = '0'; card.style.transition = 'opacity .2s'; }
   setTimeout(() => renderPosts(), 220);
   updateBadges();
-  toast(`Пост #${i+1} видалено`);
+  toast(t('toast.post.deleted', { n: i+1 }));
 }
 
 function schedPost(i) {
@@ -2199,41 +2202,42 @@ function schedPost(i) {
     scheduled.splice(idx, 1);
     saveSync('scheduled', scheduled);
     renderPosts();
-    toast(`Пост #${i+1} прибрано з плану`);
+    toast(t('toast.post.unscheduled', { n: i+1 }));
     return;
   }
   const tom = new Date(); tom.setDate(tom.getDate() + 1);
-  const dateStr = tom.toLocaleDateString('uk-UA', { weekday:'short', day:'numeric', month:'long' });
+  const locale = uiLang === 'uk' ? 'uk-UA' : 'en-US';
+  const dateStr = tom.toLocaleDateString(locale, { weekday:'short', day:'numeric', month:'long' });
   scheduled.push({ id: i, date: dateStr, ts: tom.toISOString() });
   saveSync('scheduled', scheduled);
   renderPosts();
-  toast(`✓ Пост #${i+1} заплановано на ${dateStr}`, 'ok');
+  toast(t('toast.post.scheduled', { n: i+1, date: dateStr }), 'ok');
 }
 
 function copyPost(i) {
   navigator.clipboard.writeText(P[i].x).then(() => {
     const card = Q('#pc' + i);
     if (card) { card.classList.add('copied'); setTimeout(() => card.classList.remove('copied'), 2000); }
-    toast(`✓ Пост #${i+1} скопійовано`, 'ok');
+    toast(t('toast.post.copied', { n: i+1 }), 'ok');
     if (PREFS.litoken) {
       publishToLinkedIn(P[i].x);
     } else {
       setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 700);
     }
-  }).catch(() => toast('Помилка копіювання', 'err'));
+  }).catch(() => toast(t('toast.copy.error'), 'err'));
 }
 
 function renderScheduled() {
   const el = Q('#sch-wrap');
-  if (!scheduled.length) { el.innerHTML = '<div class="empty-state"><span class="empty-icon">📅</span>Немає запланованих постів<br>Натисни "+ завтра" на будь-якому пості</div>'; return; }
+  if (!scheduled.length) { el.innerHTML = `<div class="empty-state"><span class="empty-icon">📅</span>${t('sch.empty').replace('\n','<br>')}</div>`; return; }
   el.innerHTML = scheduled.map((s, si) => {
     const p = P[s.id]; if (!p) return '';
     return `<div class="sch-card">
-      <div class="sch-when"><div class="sch-when-lbl">ЗАВТРА</div><div class="sch-when-day">${s.date}</div><div class="tone-tag t-${p.t}" style="display:inline-block;margin-top:8px">${p.t}</div></div>
+      <div class="sch-when"><div class="sch-when-lbl">${t('sch.tomorrow.lbl')}</div><div class="sch-when-day">${s.date}</div><div class="tone-tag t-${p.t}" style="display:inline-block;margin-top:8px">${p.t}</div></div>
       <div class="sch-text" id="scht${si}" onclick="this.classList.toggle('expanded')">${esc(p.x)}</div>
       <div class="sch-actions">
-        <button class="btn-sch-copy" onclick="navigator.clipboard.writeText(P[${s.id}].x).then(()=>toast('✓ Скопійовано','ok'))">Copy</button>
-        <button class="btn-sch-rem" onclick="scheduled.splice(${si},1);saveSync('scheduled',scheduled);updateBadges();renderScheduled();toast('Прибрано')">✕</button>
+        <button class="btn-sch-copy" onclick="navigator.clipboard.writeText(P[${s.id}].x).then(()=>toast(t('toast.copied'),'ok'))">Copy</button>
+        <button class="btn-sch-rem" onclick="scheduled.splice(${si},1);saveSync('scheduled',scheduled);updateBadges();renderScheduled();toast(t('toast.removed'))">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -2241,13 +2245,13 @@ function renderScheduled() {
 
 function renderDeleted() {
   const el = Q('#del-grid');
-  if (!deletedIds.size) { el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🗑</span>Немає видалених постів</div>'; return; }
+  if (!deletedIds.size) { el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🗑</span>${t('del.empty')}</div>`; return; }
   el.innerHTML = [...deletedIds].map(i => {
     const p = P[i]; if (!p) return '';
     return `<div class="post-card del-card" style="opacity:.4">
       <div class="card-head"><span class="card-num">${i+1}</span><span class="tone-tag t-${p.t}">${p.t}</span><span class="card-angle">${p.a}</span></div>
       <div class="card-body">${esc(p.x)}</div>
-      <div class="card-foot"><span class="card-chars">${p.x.length} симв</span><button class="btn-restore" onclick="restorePost(${i})">↩ відновити</button></div>
+      <div class="card-foot"><span class="card-chars">${p.x.length} ${t('post.chars')}</span><button class="btn-restore" onclick="restorePost(${i})">${t('del.restore.btn')}</button></div>
     </div>`;
   }).join('');
 }
@@ -2256,17 +2260,18 @@ function restorePost(i) {
   deletedIds.delete(i);
   saveSync('deleted', [...deletedIds]);
   updateBadges(); renderDeleted(); renderPosts();
-  toast(`Пост #${i+1} відновлено`, 'ok');
+  toast(t('toast.post.restored', { n: i+1 }), 'ok');
 }
 
 // ── TODAY PANEL ───────────────────────────────────────────────────────────────
 function showTodayPanel() {
   const avail = P.map((_,i) => i).filter(i => !deletedIds.has(i));
-  if (!avail.length) { toast('Немає доступних постів'); return; }
+  if (!avail.length) { toast(t('toast.no.posts')); return; }
   todayIdx = todayIdx % avail.length;
   const idx = avail[todayIdx];
   const p = P[idx];
-  const today = new Date().toLocaleDateString('uk-UA', { weekday:'long', day:'numeric', month:'long' });
+  const todayLocale = uiLang === 'uk' ? 'uk-UA' : 'en-US';
+  const today = new Date().toLocaleDateString(todayLocale, { weekday:'long', day:'numeric', month:'long' });
   Q('#today-date').textContent = today;
   Q('#today-text').textContent = p.x;
   Q('#today-meta').textContent = `#${idx+1} · ${p.t} · ${p.a}`;
@@ -2285,7 +2290,7 @@ function toggleToday() {
 function publishToday() {
   const idx = parseInt(Q('#today-panel').dataset.idx || '0');
   navigator.clipboard.writeText(P[idx].x).then(() => {
-    toast('✓ Скопійовано! Відкриваю LinkedIn...', 'ok');
+    toast(t('toast.linkedin.open'), 'ok');
     Q('#today-panel').style.display = 'none';
     setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 700);
   });
@@ -2394,7 +2399,7 @@ async function generateNews(topicKey) {
 
   } catch(e) {
     grid.innerHTML = `<div class="news-empty">Помилка: ${esc(e.message)}<br>Перевір API key у Config</div>`;
-    toast('Помилка генерації', 'err');
+    toast(t('toast.gen.error'), 'err');
   } finally {
     if (btn) btn.classList.remove('loading', 'active');
   }
@@ -2442,9 +2447,9 @@ function renderNewsPosts(posts) {
       <div class="news-source"><div class="news-source-dot"></div>${esc(p.source||'')} · ${esc(p.headline||'')}</div>
       <div class="news-body" id="nb${i}">${esc(p.post)}</div>
       <div class="news-foot">
-        <span class="news-chars">${p.post.length} симв</span>
-        <button class="btn-news-save" onclick="saveNewsPost(${i})">+ до списку</button>
-        <button class="btn-news-copy" onclick="copyNews(${i})">Копіювати</button>
+        <span class="news-chars">${p.post.length} ${t('post.chars')}</span>
+        <button class="btn-news-save" onclick="saveNewsPost(${i})">+ list</button>
+        <button class="btn-news-copy" onclick="copyNews(${i})">${t('post.copy.btn')}</button>
       </div>
     </div>`;
   }).join('');
@@ -2452,7 +2457,7 @@ function renderNewsPosts(posts) {
 
 function copyNews(i) {
   const el = document.getElementById('nb'+i); if(!el) return;
-  navigator.clipboard.writeText(el.textContent).then(() => toast('✓ Скопійовано!')).catch(()=>{});
+  navigator.clipboard.writeText(el.textContent).then(() => toast(t('toast.copied'), 'ok')).catch(()=>{});
 }
 
 function saveNewsPost(i) {
@@ -2469,15 +2474,15 @@ async function downloadImg(url, name) {
   try {
     // Open image in new tab — most reliable cross-origin approach
     window.open(url, '_blank');
-    toast('✓ Зображення відкрито у новій вкладці — збережи через ПКМ');
-  } catch(e) { toast('Відкрий зображення вручну', 'err'); }
+    toast(t('toast.photo.opened'));
+  } catch(e) { toast(t('toast.open.manual'), 'err'); }
 }
 
 // Override genNews to use user profile
 async function genNews(topicKey) {
   const apiKey = PREFS.apikey;
   if (!apiKey || !apiKey.startsWith('sk-')) {
-    toast('Додай Anthropic API key в Налаштування →', 'err');
+    toast(t('toast.no.apikey'), 'err');
     switchTab('settings', document.querySelector('.nav-item:last-child'));
     return;
   }
@@ -2533,7 +2538,7 @@ ${PREFS.avoid ? 'Уникати: ' + PREFS.avoid : ''}
     saveSync('newsposts', newsPosts.slice(0, 50));
     updateBadges();
     renderNewsGrid(withImgs, grid);
-    toast(`✓ ${withImgs.length} постів з новин готові`, 'ok');
+    toast(t('toast.news.ready', { n: withImgs.length }), 'ok');
   } catch(e) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">⚠</span>Помилка: ${esc(e.message)}</div>`;
     toast('Помилка генерації', 'err');
@@ -2561,7 +2566,7 @@ function renderNewsGrid(posts, grid) {
       <div class="news-img-wrap">
         ${imgHtml}
         <div class="news-topic-pill">${p.topic?.toUpperCase()||'NEWS'}</div>
-        ${p.imgUrl ? `<div class="news-img-dl" onclick="window.open('${p.imgUrl.replace(/'/g,"\\'")}','_blank')">⬇ фото</div>` : ''}
+        ${p.imgUrl ? `<div class="news-img-dl" onclick="window.open('${p.imgUrl.replace(/'/g,"\\'")}','_blank')">⬇ photo</div>` : ''}
       </div>
       <div class="news-source-row"><div class="news-src-dot"></div>${esc(p.source||'')} · ${esc(p.headline||'')}</div>
       <div class="news-body-text" id="nbt${i}">${esc(p.post)}</div>
@@ -2576,14 +2581,14 @@ function renderNewsGrid(posts, grid) {
 
 function copyNews(i) {
   const el = Q('#nbt' + i); if (!el) return;
-  navigator.clipboard.writeText(el.textContent).then(() => toast('✓ Скопійовано!', 'ok'));
+  navigator.clipboard.writeText(el.textContent).then(() => toast(t('toast.copied'), 'ok'));
 }
 
 function saveNewsPost(i) {
   const el = Q('#nbt' + i); if (!el) return;
   P.push({ t: 'insight', a: 'з новин', x: el.textContent });
   updateBadges(); renderPosts();
-  toast('✓ Додано до списку постів', 'ok');
+  toast(t('toast.saved.tolist'), 'ok');
 }
 
 // ── LINKEDIN PUBLISH ──────────────────────────────────────────────────────────
@@ -2595,28 +2600,212 @@ async function publishToLinkedIn(text) {
       headers: { Authorization: `Bearer ${PREFS.litoken}`, 'Content-Type': 'application/json', 'X-Restli-Protocol-Version': '2.0.0' },
       body: JSON.stringify({ author: PREFS.liUrn, lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text }, shareMediaCategory: 'NONE' } }, visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' } })
     });
-    if (resp.status === 201) toast('✓ Опубліковано на LinkedIn!', 'ok');
+    if (resp.status === 201) toast(t('toast.published'), 'ok');
   } catch {}
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
+function updateThemeUI(theme){
+  const sw=document.getElementById('theme-sw');
+  const lbl=document.getElementById('theme-lbl');
+  const landBtn=document.getElementById('land-theme-btn');
+  if(sw) sw.classList.toggle('light',theme==='light');
+  if(lbl) lbl.textContent=theme==='light'?'☀️ Light':'🌙 Dark';
+  if(landBtn) landBtn.textContent=theme==='light'?'☀️':'🌙';
+}
 function toggleTheme(){
   const curr=document.documentElement.getAttribute('data-theme')||'dark';
   const next=curr==='light'?'dark':'light';
   document.documentElement.setAttribute('data-theme',next);
-  const sw=document.getElementById('theme-sw');
-  const lbl=document.getElementById('theme-lbl');
-  if(sw) sw.classList.toggle('light',next==='light');
-  if(lbl) lbl.textContent=next==='light'?'☀️ Light':'🌙 Dark';
+  updateThemeUI(next);
   localStorage.setItem('pp_theme',next);
 }
 function initThemeUI(){
   const curr=document.documentElement.getAttribute('data-theme')||'dark';
-  const sw=document.getElementById('theme-sw');
-  const lbl=document.getElementById('theme-lbl');
-  if(sw) sw.classList.toggle('light',curr==='light');
-  if(lbl) lbl.textContent=curr==='light'?'☀️ Light':'🌙 Dark';
+  updateThemeUI(curr);
 }
+// ── I18N ──────────────────────────────────────────────────────────────────────
+let uiLang = 'en';
+const STRINGS = {
+  en: {
+    'nav.login':'Log In','nav.signup':'Start for Free','lang.btn':'🇺🇦 UA',
+    'hero.tag':'AI · LinkedIn · Automation','hero.h1':'Posts that<br><span>people read</span>',
+    'hero.p':'Enter your style and projects once — get 50 ready posts in your voice. Plus fresh AI and tech news already rewritten for you.',
+    'hero.cta1':'Try for free →','hero.cta2':'How it works',
+    'stat.posts.lbl':'posts in base','stat.time.lbl':'to generate','stat.tones.lbl':'different tones','stat.start.lbl':'to start',
+    'feat.title':'What you get',
+    'feat.1.title':'Posts in your style','feat.1.desc':'Enter your projects, tone, audience — and 50 posts written in your voice, not generic AI text.',
+    'feat.2.title':'Fresh news → your insight','feat.2.desc':'AI finds the latest news in AI, tech, and design and rewrites them on your behalf — with your context and conclusions.',
+    'feat.3.title':'Scheduler','feat.3.desc':'Plan posts in advance. The "+ tomorrow" button queues a post. No more forgotten publications.',
+    'feat.4.title':'Post for today','feat.4.desc':'One click — and the system suggests the best post to publish right now based on your history.',
+    'feat.5.title':'One click → LinkedIn','feat.5.desc':"Approved a post — it's copied and LinkedIn is open. Maximum 30 seconds from selection to publishing.",
+    'feat.6.title':'Learns from you','feat.6.desc':'The system remembers which posts you choose and gradually writes closer to your style.',
+    'how.title':'How it works',
+    'step.1.title':'Register','step.1.desc':"Two fields — and you're in",
+    'step.2.title':'Set up profile','step.2.desc':'Projects, style, audience, LinkedIn',
+    'step.3.title':'Pick posts','step.3.desc':'50 ready + fresh news',
+    'step.4.title':'Publish','step.4.desc':'One click → LinkedIn',
+    'pricing.title':'Pricing','pricing.sub':'Currently free. Only need an Anthropic API key for AI generation.',
+    'pricing.badge':'BETA · FREE','pricing.period':'now · paid later',
+    'pricing.f1':'50 personalized posts','pricing.f2':'Post generation from news (AI + tech + design)',
+    'pricing.f3':'Scheduler and "post for today"','pricing.f4':'Learning from your choices',
+    'pricing.f5':'Your Anthropic API key (free tier available)','pricing.cta':'Start for free →',
+    'footer.text':'Made by a designer for designers and AI builders',
+    'auth.sub':'AI LinkedIn Posts Manager','auth.tab.login':'Log In','auth.tab.register':'Register',
+    'auth.label.password':'Password','auth.label.name':'Name',
+    'auth.btn.login':'Log In →','auth.divider':'or','auth.demo':'🚀 Quick demo login (no password)',
+    'auth.btn.register':'Register →','auth.back':'← Back to homepage',
+    'ob.title':"Let's set up your profile",'ob.sub':'3 minutes — and the system writes in your style, not generic AI',
+    'ob.step1.label':'About you','ob.step2.label':'Projects','ob.step3.label':'Style','ob.step4.label':'LinkedIn',
+    'ob.step1.title':'Who are you and what do you do?','ob.step1.desc':'This is the foundation for all posts — Claude will write on your behalf, so understanding the context is important.',
+    'ob.label.name':'Name','ob.label.role':'Position / role','ob.label.location':'City / Country',
+    'ob.label.bio':'Brief about you (2-3 sentences)','ob.label.facts':'Key achievements or facts',
+    'ob.step2.title':'Your projects and stack','ob.step2.desc':'What do you build? More details — more specific and interesting posts.',
+    'ob.label.projects':'Current projects (name, what it does, stack)','ob.label.stack':'Favorite tools / stack',
+    'ob.label.audience':'Your post audience',"ob.label.topics":"Topics you're interested in",
+    'ob.topic.ai':'AI Tools','ob.topic.design':'Product Design','ob.topic.saas':'SaaS / Startup',
+    'ob.topic.claude':'Claude Code','ob.topic.ux':'UX & Research','ob.topic.ds':'Design Systems',
+    'ob.topic.arch':'Tech Architecture','ob.topic.solo':'Solo building','ob.topic.prod':'Productivity',
+    'ob.step3.title':'Style and tone of posts','ob.step3.desc':'How do you want to sound? This defines the character of all posts.',
+    'ob.label.tone':'Main tone','ob.tone.professional':'Professional','ob.tone.friendly':'Friendly',
+    'ob.tone.expert':'Expert','ob.tone.storyteller':'Storyteller','ob.tone.provocative':'Provocative',
+    'ob.label.postlang':'Post language','ob.label.length':'Preferred length',
+    'ob.len.mix':'Mix — short and long','ob.len.short':'Mostly short (up to 400 chars)','ob.len.long':'Mostly long (600-1000 chars)',
+    'ob.label.avoid':'What you never write in posts',"ob.label.example":"Example post in your style (if any)",
+    'ob.step4.title':'LinkedIn and settings','ob.step4.desc':'Last step. LinkedIn URL for personalization, API key for AI generation.',
+    'ob.label.linkedin':'LinkedIn URL','ob.label.site':'Website or portfolio','ob.label.apikey':'Anthropic API Key',
+    'ob.apikey.hint':'Needed for generating posts and news. Free tier: console.anthropic.com',
+    'ob.label.litoken':'LinkedIn Access Token (optional)',
+    'ob.litoken.hint':'For direct publishing without copying. developer.linkedin.com → Create App',
+    'ob.back':'← Back','ob.next':'Next →','ob.done':'Done →','ob.step.indicator':'Step {n} of 4',
+    'app.loading':'Loading...','app.section.content':'Content','app.nav.posts':'All posts',
+    'app.nav.scheduled':'Scheduled','app.nav.news':'From news','app.nav.deleted':'Deleted',
+    'app.section.account':'Account','app.nav.settings':'Settings','app.logout.title':'Log out',
+    'app.search.ph':'search...','app.filter.tone':'tone','app.filter.all':'All',
+    'app.today.btn':'✦ Post for today','app.today.title':'Post for today',
+    'app.today.copy':'Copy → LinkedIn','app.today.skip':'Another option','app.today.close':'Close',
+    'app.news.title':'Posts from news','app.news.btn.ai':'🤖 AI & LLM','app.news.btn.design':'🎨 Product Design',
+    'app.news.btn.tech':'💻 Technology','app.news.btn.saas':'🚀 SaaS & Startup','app.news.btn.all':'⚡ All at once',
+    'app.news.empty':'Choose a topic above — Claude will find fresh news and write posts on your behalf',
+    'settings.profile':'👤 Profile','settings.style':'🎨 Post Style','settings.api':'🔑 API & Integrations',
+    'settings.label.name':'Name','settings.label.role':'Role','settings.label.location':'City',
+    'settings.label.bio':'About you','settings.label.projects':'Projects','settings.label.avoid':'What to avoid',
+    'settings.label.example':'Example of your style','settings.label.stack':'Stack & tools',
+    'settings.label.apikey':'Anthropic API Key','settings.label.linkedin':'LinkedIn URL',
+    'settings.label.litoken':'LinkedIn Access Token','settings.label.site':'Website','settings.save':'Save settings',
+    'post.chars':'chars','post.copy.btn':'Copy','post.tomorrow.off':'+ tomorrow','post.tomorrow.on':'✓ tomorrow',
+    'post.empty':'No posts found','sch.tomorrow.lbl':'TOMORROW',
+    'sch.empty':'No scheduled posts\nClick "+ tomorrow" on any post','del.empty':'No deleted posts',
+    'del.restore.btn':'↩ restore',
+    'toast.profile.saved':'🎉 Profile saved! Welcome to PostPilot!','toast.settings.saved':'✓ Settings saved',
+    'toast.post.deleted':'Post #{n} deleted','toast.post.scheduled':'✓ Post #{n} scheduled for {date}',
+    'toast.post.unscheduled':'Post #{n} removed from plan','toast.post.copied':'✓ Post #{n} copied',
+    'toast.copy.error':'Copy error','toast.copied':'✓ Copied!','toast.removed':'Removed',
+    'toast.no.posts':'No posts available','toast.linkedin.open':'✓ Copied! Opening LinkedIn...',
+    'toast.no.apikey':'Add Anthropic API key in Settings →','toast.post.restored':'Post #{n} restored',
+    'toast.user.notfound':'Account not found. Please register.','toast.fill.fields':'Fill in name and email',
+    'toast.fill.email':'Enter email','toast.welcome.demo':'Welcome to demo!','toast.logout':'See you!',
+    'toast.news.ready':'✓ {n} news posts ready','toast.gen.error':'Generation error',
+    'toast.saved.tolist':'✓ Added to posts list','toast.photo.opened':'✓ Image opened in new tab — save with right click',
+    'toast.open.manual':'Open image manually','toast.published':'✓ Published on LinkedIn!',
+  },
+  uk: {
+    'nav.login':'Увійти','nav.signup':'Почати безкоштовно','lang.btn':'🇬🇧 EN',
+    'hero.tag':'AI · LinkedIn · Автоматизація','hero.h1':'Пости які<br><span>люди читають</span>',
+    'hero.p':'Ввів свій стиль і проекти один раз — отримуєш 50 готових постів у своєму голосі. Плюс свіжі новини з AI і tech вже переписані під тебе.',
+    'hero.cta1':'Спробувати безкоштовно →','hero.cta2':'Як це працює',
+    'stat.posts.lbl':'постів у базі','stat.time.lbl':'на генерацію','stat.tones.lbl':'різних тонів','stat.start.lbl':'щоб почати',
+    'feat.title':'Що ти отримуєш',
+    'feat.1.title':'Пости у твоєму стилі','feat.1.desc':'Вводиш свої проекти, тон, аудиторію — і 50 постів написані саме твоїм голосом, не шаблонним AI-текстом.',
+    'feat.2.title':'Свіжі новини → твій досвід','feat.2.desc':'AI знаходить останні новини з AI, tech і дизайну і переписує їх від твого імені — з твоїм контекстом і висновками.',
+    'feat.3.title':'Планувальник','feat.3.desc':'Плануй пости наперед. Кнопка "+ завтра" і пост у черзі. Ніяких забутих публікацій.',
+    'feat.4.title':'Пост на сьогодні','feat.4.desc':'Один клік — і система пропонує найкращий пост для публікації саме зараз з урахуванням твоєї історії.',
+    'feat.5.title':'Один клік → LinkedIn','feat.5.desc':"Схвалив пост — він скопійований і LinkedIn відкритий. Максимум 30 секунд від вибору до публікації.",
+    'feat.6.title':'Навчається на тебе','feat.6.desc':"Система запам'ятовує які пости ти обираєш і поступово пишуть ближче до твого стилю.",
+    'how.title':'Як це працює',
+    'step.1.title':'Реєструйся','step.1.desc':'Два поля — і ти всередині',
+    'step.2.title':'Налаштуй профіль','step.2.desc':'Проекти, стиль, аудиторія, LinkedIn',
+    'step.3.title':'Вибирай пости','step.3.desc':'50 готових + свіжі новини',
+    'step.4.title':'Публікуй','step.4.desc':'Один клік → LinkedIn',
+    'pricing.title':'Ціна','pricing.sub':'Зараз безкоштовно. Потрібен тільки Anthropic API key для AI генерації.',
+    'pricing.badge':'BETA · БЕЗКОШТОВНО','pricing.period':'зараз · потім буде платно',
+    'pricing.f1':'50 персоналізованих постів','pricing.f2':'Генерація постів з новин (AI + tech + design)',
+    'pricing.f3':'Планувальник і "пост на сьогодні"','pricing.f4':'Навчання на твоїх виборах',
+    'pricing.f5':'Твій Anthropic API key (безкоштовний tier є)','pricing.cta':'Почати безкоштовно →',
+    'footer.text':'Зроблено дизайнером для дизайнерів і AI builders',
+    'auth.sub':'AI LinkedIn Posts Manager','auth.tab.login':'Увійти','auth.tab.register':'Зареєструватись',
+    'auth.label.password':'Пароль','auth.label.name':"Ім'я",
+    'auth.btn.login':'Увійти →','auth.divider':'або','auth.demo':'🚀 Швидкий демо-вхід (без пароля)',
+    'auth.btn.register':'Зареєструватись →','auth.back':'← Назад на головну',
+    'ob.title':'Налаштуємо твій профіль','ob.sub':'3 хвилини — і система пише в твоєму стилі, а не шаблонному AI',
+    'ob.step1.label':'Про тебе','ob.step2.label':'Проекти','ob.step3.label':'Стиль','ob.step4.label':'LinkedIn',
+    'ob.step1.title':'Хто ти і чим займаєшся?','ob.step1.desc':'Це основа для всіх постів — Claude буде писати від твого імені, тому важливо розуміти контекст.',
+    'ob.label.name':"Ім'я",'ob.label.role':'Посада / роль','ob.label.location':'Місто / країна',
+    'ob.label.bio':'Коротко про тебе (2-3 речення)','ob.label.facts':'Ключові досягнення або факти',
+    'ob.step2.title':'Твої проекти і стек','ob.step2.desc':'Що ти будуєш? Чим більше деталей — тим конкретніші і цікавіші пости.',
+    'ob.label.projects':'Поточні проекти (назва, що робить, стек)','ob.label.stack':'Улюблені інструменти / стек',
+    'ob.label.audience':'Аудиторія твоїх постів','ob.label.topics':'Теми які тебе цікавлять',
+    'ob.topic.ai':'AI інструменти','ob.topic.design':'Product Design','ob.topic.saas':'SaaS / Startup',
+    'ob.topic.claude':'Claude Code','ob.topic.ux':'UX та дослідження','ob.topic.ds':'Design Systems',
+    'ob.topic.arch':'Технічна архітектура','ob.topic.solo':'Solo building','ob.topic.prod':'Продуктивність',
+    'ob.step3.title':'Стиль і тон постів','ob.step3.desc':'Як ти хочеш звучати? Це визначить характер всіх постів.',
+    'ob.label.tone':'Основний тон','ob.tone.professional':'Професійний','ob.tone.friendly':'Дружній',
+    'ob.tone.expert':'Експертний','ob.tone.storyteller':'Сторітеллер','ob.tone.provocative':'Провокаційний',
+    'ob.label.postlang':'Мова постів','ob.label.length':'Довжина яку ти надаєш перевагу',
+    'ob.len.mix':'Мікс — короткі і довгі','ob.len.short':'Переважно короткі (до 400 симв)','ob.len.long':'Переважно довгі (600-1000 симв)',
+    'ob.label.avoid':'Що ти ніколи не пишеш у постах','ob.label.example':'Приклад поста в твоєму стилі (якщо є)',
+    'ob.step4.title':'LinkedIn і налаштування','ob.step4.desc':'Останній крок. LinkedIn URL для персоналізації, API key для AI генерації.',
+    'ob.label.linkedin':'LinkedIn URL','ob.label.site':'Сайт або портфоліо','ob.label.apikey':'Anthropic API Key',
+    'ob.apikey.hint':'Потрібен для генерації постів і новин. Безкоштовний tier: console.anthropic.com',
+    'ob.label.litoken':'LinkedIn Access Token (опційно)',
+    'ob.litoken.hint':'Для прямої публікації без копіювання. developer.linkedin.com → Create App',
+    'ob.back':'← Назад','ob.next':'Далі →','ob.done':'Готово →','ob.step.indicator':'Крок {n} з 4',
+    'app.loading':'Завантаження...','app.section.content':'Контент','app.nav.posts':'Всі пости',
+    'app.nav.scheduled':'Заплановані','app.nav.news':'З новин','app.nav.deleted':'Видалені',
+    'app.section.account':'Аккаунт','app.nav.settings':'Налаштування','app.logout.title':'Вийти',
+    'app.search.ph':'пошук...','app.filter.tone':'тон','app.filter.all':'Всі',
+    'app.today.btn':'✦ Пост на сьогодні','app.today.title':'Пост на сьогодні',
+    'app.today.copy':'Копіювати → LinkedIn','app.today.skip':'Інший варіант','app.today.close':'Закрити',
+    'app.news.title':'Пости з новин','app.news.btn.ai':'🤖 AI та LLM','app.news.btn.design':'🎨 Product Design',
+    'app.news.btn.tech':'💻 Технології','app.news.btn.saas':'🚀 SaaS & Startup','app.news.btn.all':'⚡ Все одразу',
+    'app.news.empty':'Обери тему вище — Claude знайде свіжі новини і напише пости від твого імені',
+    'settings.profile':'👤 Профіль','settings.style':'🎨 Стиль постів','settings.api':'🔑 API та інтеграції',
+    'settings.label.name':"Ім'я",'settings.label.role':'Роль','settings.label.location':'Місто',
+    'settings.label.bio':'Про тебе','settings.label.projects':'Проекти','settings.label.avoid':'Чого уникати',
+    'settings.label.example':'Приклад твого стилю','settings.label.stack':'Стек і інструменти',
+    'settings.label.apikey':'Anthropic API Key','settings.label.linkedin':'LinkedIn URL',
+    'settings.label.litoken':'LinkedIn Access Token','settings.label.site':'Сайт','settings.save':'Зберегти налаштування',
+    'post.chars':'симв','post.copy.btn':'Копіювати','post.tomorrow.off':'+ завтра','post.tomorrow.on':'✓ завтра',
+    'post.empty':'Постів не знайдено','sch.tomorrow.lbl':'ЗАВТРА',
+    'sch.empty':'Немає запланованих постів\nНатисни "+ завтра" на будь-якому пості','del.empty':'Немає видалених постів',
+    'del.restore.btn':'↩ відновити',
+    'toast.profile.saved':'🎉 Профіль збережено! Ласкаво просимо до PostPilot!','toast.settings.saved':'✓ Налаштування збережено',
+    'toast.post.deleted':'Пост #{n} видалено','toast.post.scheduled':'✓ Пост #{n} заплановано на {date}',
+    'toast.post.unscheduled':'Пост #{n} прибрано з плану','toast.post.copied':'✓ Пост #{n} скопійовано',
+    'toast.copy.error':'Помилка копіювання','toast.copied':'✓ Скопійовано!','toast.removed':'Прибрано',
+    'toast.no.posts':'Немає доступних постів','toast.linkedin.open':'✓ Скопійовано! Відкриваю LinkedIn...',
+    'toast.no.apikey':'Додай Anthropic API key в Налаштування →','toast.post.restored':'Пост #{n} відновлено',
+    'toast.user.notfound':'Акаунт не знайдено. Зареєструйся.','toast.fill.fields':"Заповни ім'я і email",
+    'toast.fill.email':'Введи email','toast.welcome.demo':'Ласкаво просимо до демо!','toast.logout':'До зустрічі!',
+    'toast.news.ready':'✓ {n} постів з новин готові','toast.gen.error':'Помилка генерації',
+    'toast.saved.tolist':'✓ Додано до списку постів','toast.photo.opened':'✓ Зображення відкрито у новій вкладці — збережи через ПКМ',
+    'toast.open.manual':'Відкрий зображення вручну','toast.published':'✓ Опубліковано на LinkedIn!',
+  }
+};
+function t(key, vars = {}) {
+  const str = (STRINGS[uiLang] || STRINGS.en)[key] || STRINGS.en[key] || key;
+  return Object.entries(vars).reduce((s, [k, v]) => s.replace(new RegExp(`\\{${k}\\}`, 'g'), v), str);
+}
+function applyLang(lang) {
+  uiLang = lang;
+  saveSync('uiLang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
+  document.querySelectorAll('.lang-toggle').forEach(btn => { btn.textContent = t('lang.btn'); });
+}
+function switchUiLang() { applyLang(uiLang === 'en' ? 'uk' : 'en'); }
+
 function Q(s) { return document.querySelector(s); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 let tt;
@@ -2630,6 +2819,7 @@ function toast(msg, type = '') {
 }
 
 init();
+initThemeUI();
 </script>
 </body>
 </html>
