@@ -7,7 +7,9 @@ export interface User {
 
 export const getSession = (): User | null => {
   try {
-    return JSON.parse(localStorage.getItem('pp_user') || 'null');
+    const u = JSON.parse(localStorage.getItem('pp_user') || 'null');
+    if (!u || !u._id || !u.email) return null;
+    return u;
   } catch {
     return null;
   }
