@@ -7,6 +7,7 @@ import { type User } from '../lib/auth';
 interface Props {
   user: User;
   onDone: (hasApiKey: boolean) => void;
+  onBack: () => void;
 }
 
 const TONES = ['Professional', 'Storytelling', 'Educational', 'Motivational', 'Conversational', 'Provocative'];
@@ -212,7 +213,7 @@ const steps = [
   { label: 'Step 4 of 4', title: 'Connect & generate', subtitle: 'Add your API key to start generating' },
 ];
 
-export default function OnboardingView({ user, onDone }: Props) {
+export default function OnboardingView({ user, onDone, onBack }: Props) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
 
@@ -275,6 +276,17 @@ export default function OnboardingView({ user, onDone }: Props) {
   return (
     <div style={s.root}>
       <div style={s.card}>
+        {step === 0 && (
+          <button
+            style={s.backBtn}
+            onClick={onBack}
+            type="button"
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--t2)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--t3)')}
+          >
+            ← Back to home
+          </button>
+        )}
         <div style={s.dots}>
           {steps.map((_, i) => (
             <div key={i} style={s.dot(i === step, i < step)} />

@@ -78,6 +78,7 @@ function App() {
       <OnboardingView
         user={user}
         onDone={handleOnboardingDone}
+        onBack={() => setView('landing')}
       />
     );
   }
