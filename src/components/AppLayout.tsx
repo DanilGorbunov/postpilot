@@ -468,7 +468,7 @@ export default function AppLayout({ user, currentTab, onTabChange, onLogout, dem
             <AnalyticsView user={user} prefs={prefs ?? null} demoMode={demoMode} />
           )}
           {currentTab === 'planner' && (
-            <PlannerView user={user} prefs={prefs ?? null} demoMode={demoMode} onTabChange={onTabChange} />
+            <PlannerView user={user} prefs={prefs ?? null} demoMode={demoMode} />
           )}
         </div>
       </div>

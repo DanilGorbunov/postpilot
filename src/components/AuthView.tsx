@@ -9,8 +9,12 @@ interface Props {
   onSuccess: (user: User, isNew: boolean) => void;
 }
 
-const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
-  root: { minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 },
+function tabStyle(active: boolean): CSSProperties {
+  return { flex: 1, padding: '10px 0', background: 'none', border: 'none', borderBottom: active ? '2px solid var(--ac)' : '2px solid transparent', color: active ? 'var(--t1)' : 'var(--t3)', fontFamily: 'var(--head)', fontSize: 14, fontWeight: active ? 600 : 500, cursor: 'pointer', marginBottom: -1 };
+}
+
+const s: Record<string, CSSProperties> = {
+  root: { minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', padding: 20 },
   card: { background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 'var(--r2)', padding: 40, width: '100%', maxWidth: 420, animation: 'fadeIn .25s ease' },
   backBtn: { background: 'none', border: 'none', color: 'var(--t3)', fontSize: 13, cursor: 'pointer', padding: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 6 },
   logo: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 },
@@ -18,7 +22,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
   logoText: { fontFamily: 'var(--head)', fontSize: 22, fontWeight: 800, color: 'var(--t1)' },
   logoAccent: { color: 'var(--ac2)' },
   tabs: { display: 'flex', borderBottom: '1px solid var(--bd)', marginBottom: 28 },
-  tab: (active: boolean): CSSProperties => ({ flex: 1, padding: '10px 0', background: 'none', border: 'none', borderBottom: active ? '2px solid var(--ac)' : '2px solid transparent', color: active ? 'var(--t1)' : 'var(--t3)', fontFamily: 'var(--head)', fontSize: 14, fontWeight: active ? 600 : 500, cursor: 'pointer', marginBottom: -1 }),
   label: { display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--t2)', marginBottom: 6 },
   input: { width: '100%', padding: '10px 14px', background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 'var(--r)', color: 'var(--t1)', fontSize: 14, outline: 'none', marginBottom: 14, boxSizing: 'border-box' },
   submitBtn: { width: '100%', padding: '12px', background: 'var(--ac)', color: '#fff', border: 'none', borderRadius: 'var(--r)', fontFamily: 'var(--head)', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 4 },
@@ -62,8 +65,8 @@ export default function AuthView({ onBack, onSuccess }: Props) {
           <span style={s.logoText}>Post<span style={s.logoAccent}>Pilot</span></span>
         </div>
         <div style={s.tabs}>
-          <button style={s.tab(tab === 'login')} onClick={() => setTab('login')}>Sign In</button>
-          <button style={s.tab(tab === 'register')} onClick={() => setTab('register')}>Create Account</button>
+          <button style={tabStyle(tab === 'login')} onClick={() => setTab('login')}>Sign In</button>
+          <button style={tabStyle(tab === 'register')} onClick={() => setTab('register')}>Create Account</button>
         </div>
         {error && <div style={s.error}>{error}</div>}
         <form onSubmit={handleSubmit}>

@@ -17,7 +17,14 @@ const DEMO_IDEAS = [
   { _id: 'di5', content: 'Why I stopped chasing virality and what happened', source: 'personal', used: true },
 ];
 
-const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
+function ideaTabStyle(active: boolean): CSSProperties {
+  return { padding: '5px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: active ? '1px solid var(--ac)' : '1px solid var(--bd)', background: active ? 'rgba(107,79,255,.15)' : 'var(--s1)', color: active ? 'var(--ac2)' : 'var(--t3)', transition: 'all .15s', fontFamily: 'var(--head)' };
+}
+function ideaCardStyle(used: boolean): CSSProperties {
+  return { background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 'var(--r)', padding: '14px 16px', display: 'flex', alignItems: 'flex-start' as const, gap: 12, opacity: used ? 0.5 : 1, transition: 'all .15s' };
+}
+
+const s: Record<string, CSSProperties> = {
   root: {
     padding: 24,
     animation: 'fadeIn .2s ease',
@@ -69,35 +76,12 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     gap: 6,
     marginBottom: 16,
   },
-  tab: (active: boolean): CSSProperties => ({
-    padding: '5px 14px',
-    borderRadius: 20,
-    fontSize: 12.5,
-    fontWeight: 500,
-    cursor: 'pointer',
-    border: active ? '1px solid var(--ac)' : '1px solid var(--bd)',
-    background: active ? 'rgba(107,79,255,.15)' : 'var(--s1)',
-    color: active ? 'var(--ac2)' : 'var(--t3)',
-    transition: 'all .15s',
-    fontFamily: 'var(--head)',
-  }),
   list: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     gap: 8,
     maxWidth: 700,
   },
-  card: (used: boolean): CSSProperties => ({
-    background: 'var(--s1)',
-    border: '1px solid var(--bd)',
-    borderRadius: 'var(--r)',
-    padding: '14px 16px',
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 12,
-    opacity: used ? 0.5 : 1,
-    transition: 'all .15s',
-  }),
   cardLeft: {
     flex: 1,
   },
@@ -219,10 +203,10 @@ export default function IdeasView({ user, demoMode }: Props) {
       </div>
 
       <div style={s.tabs}>
-        <button style={s.tab(filter === 'active')} onClick={() => setFilter('active')}>
+        <button style={ideaTabStyle(filter === 'active')} onClick={() => setFilter('active')}>
           Active ({ideas.filter(i => !i.used).length})
         </button>
-        <button style={s.tab(filter === 'used')} onClick={() => setFilter('used')}>
+        <button style={ideaTabStyle(filter === 'used')} onClick={() => setFilter('used')}>
           Used ({ideas.filter(i => i.used).length})
         </button>
       </div>
@@ -238,7 +222,7 @@ export default function IdeasView({ user, demoMode }: Props) {
         {filtered.map(idea => (
           <div
             key={idea._id}
-            style={s.card(idea.used)}
+            style={ideaCardStyle(idea.used)}
             onMouseEnter={e => { if (!idea.used) e.currentTarget.style.borderColor = 'var(--bd2)'; }}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bd)')}
           >

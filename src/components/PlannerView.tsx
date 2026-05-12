@@ -8,7 +8,6 @@ interface Props {
   user: User;
   prefs: any;
   demoMode: boolean;
-  onTabChange?: (tab: string) => void;
 }
 
 const TONE_COLORS: Record<string, string> = {
@@ -65,7 +64,7 @@ type Post = {
   score?: number;
 };
 
-export default function PlannerView({ user, prefs, demoMode, onTabChange }: Props) {
+export default function PlannerView({ user, prefs, demoMode }: Props) {
   const [toneFilter, setToneFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -591,7 +590,6 @@ export default function PlannerView({ user, prefs, demoMode, onTabChange }: Prop
 
         <div style={calGridStyle}>
           {weeks.map((week, wi) => {
-            const weekOf = toDateStr(week[0]);
             return (
               <div key={wi} style={weekRow}>
                 <div style={weekLabel}>

@@ -51,7 +51,26 @@ const DEMO_SCHEDULED = [
   },
 ];
 
-const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
+function dayStyle(isToday: boolean, isSelected: boolean, isCurrentMonth: boolean): CSSProperties {
+  return {
+    minHeight: 68, padding: '6px',
+    background: isSelected ? 'rgba(107,79,255,.15)' : isToday ? 'rgba(107,79,255,.06)' : 'var(--s1)',
+    border: isSelected ? '1px solid rgba(107,79,255,.4)' : isToday ? '1px solid rgba(107,79,255,.2)' : '1px solid var(--bd)',
+    borderRadius: 'var(--r)', cursor: 'pointer', transition: 'all .15s',
+    opacity: isCurrentMonth ? 1 : 0.35,
+  };
+}
+function dayNumStyle(isToday: boolean): CSSProperties {
+  return { fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? 'var(--ac2)' : 'var(--t2)', marginBottom: 4, fontFamily: 'var(--head)' };
+}
+function dotStyle(color: string): CSSProperties {
+  return { width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 };
+}
+function postToneStyle(tone: string): CSSProperties {
+  return { fontSize: 10, fontWeight: 700, color: dotColor(tone), textTransform: 'uppercase' as const, letterSpacing: '.5px', marginBottom: 6 };
+}
+
+const s: Record<string, CSSProperties> = {
   root: {
     padding: 24,
     display: 'flex',
@@ -103,35 +122,11 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     letterSpacing: '.8px',
     fontFamily: 'var(--head)',
   },
-  day: (isToday: boolean, isSelected: boolean, isCurrentMonth: boolean): CSSProperties => ({
-    minHeight: 68,
-    padding: '6px',
-    background: isSelected ? 'rgba(107,79,255,.15)' : isToday ? 'rgba(107,79,255,.06)' : 'var(--s1)',
-    border: isSelected ? '1px solid rgba(107,79,255,.4)' : isToday ? '1px solid rgba(107,79,255,.2)' : '1px solid var(--bd)',
-    borderRadius: 'var(--r)',
-    cursor: 'pointer',
-    transition: 'all .15s',
-    opacity: isCurrentMonth ? 1 : 0.35,
-  }),
-  dayNum: (isToday: boolean): CSSProperties => ({
-    fontSize: 12,
-    fontWeight: isToday ? 700 : 500,
-    color: isToday ? 'var(--ac2)' : 'var(--t2)',
-    marginBottom: 4,
-    fontFamily: 'var(--head)',
-  }),
   dots: {
     display: 'flex',
     flexWrap: 'wrap' as const,
     gap: 3,
   },
-  dot: (color: string): CSSProperties => ({
-    width: 7,
-    height: 7,
-    borderRadius: '50%',
-    background: color,
-    flexShrink: 0,
-  }),
   sidePanel: {
     flex: 1,
     background: 'var(--s1)',
@@ -157,14 +152,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     padding: 14,
     marginBottom: 10,
   },
-  postTone: (tone: string): CSSProperties => ({
-    fontSize: 10,
-    fontWeight: 700,
-    color: dotColor(tone),
-    textTransform: 'uppercase' as const,
-    letterSpacing: '.5px',
-    marginBottom: 6,
-  }),
   postContent: {
     fontSize: 13,
     color: 'var(--t2)',
@@ -218,7 +205,7 @@ export default function CalendarView({ user, demoMode }: Props) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-  const postsByDate: Record<string, typeof posts> = {};
+  const postsByDate: Record<string, any[]> = {};
   posts.forEach(p => {
     if (p.scheduledDate) {
       if (!postsByDate[p.scheduledDate]) postsByDate[p.scheduledDate] = [];
@@ -329,7 +316,7 @@ export default function CalendarView({ user, demoMode }: Props) {
             return (
               <div
                 key={i}
-                style={s.day(isToday, isSelected, cell.isCurrentMonth)}
+                style={dayStyle(isToday, isSelected, cell.isCurrentMonth)}
                 onClick={() => setSelectedDate(cell.dateStr === selectedDate ? null : cell.dateStr)}
                 onMouseEnter={e => {
                   if (!isSelected) e.currentTarget.style.borderColor = 'var(--bd2)';
@@ -340,11 +327,11 @@ export default function CalendarView({ user, demoMode }: Props) {
                   }
                 }}
               >
-                <div style={s.dayNum(isToday)}>{cell.dayNum}</div>
+                <div style={dayNumStyle(isToday)}>{cell.dayNum}</div>
                 {dayPosts.length > 0 && (
                   <div style={s.dots}>
                     {dayPosts.slice(0, 6).map((p, pi) => (
-                      <div key={pi} style={s.dot(dotColor(p.tone))} title={p.tone} />
+                      <div key={pi} style={dotStyle(dotColor(p.tone))} title={p.tone} />
                     ))}
                   </div>
                 )}
@@ -368,7 +355,7 @@ export default function CalendarView({ user, demoMode }: Props) {
 
         {(selectedDate ? selectedPosts : posts).map(post => (
           <div key={post._id} style={s.postCard}>
-            <div style={s.postTone(post.tone)}>{post.tone}</div>
+            <div style={postToneStyle(post.tone)}>{post.tone}</div>
             <div style={s.postContent}>{post.content}</div>
             <div style={s.postActions}>
               <button

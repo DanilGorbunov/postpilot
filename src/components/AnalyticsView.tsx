@@ -32,7 +32,6 @@ function normalizedTone(tone: string): string {
   return tone.toLowerCase().trim();
 }
 
-const KNOWN_TONES = ['builder', 'insight', 'story', 'opinion', 'tactical'];
 
 interface ScheduleResult {
   frequency: number;

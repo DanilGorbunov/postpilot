@@ -19,7 +19,17 @@ const LANGUAGES = [
   { code: 'Spanish', label: 'ES' },
 ];
 
-const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
+function onboardDotStyle(active: boolean, done: boolean): CSSProperties {
+  return { width: active ? 20 : 8, height: 8, borderRadius: 4, background: done || active ? 'var(--ac)' : 'var(--s3)', transition: 'all .3s ease' };
+}
+function onboardChipStyle(active: boolean): CSSProperties {
+  return { padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: active ? '1px solid var(--ac)' : '1px solid var(--bd)', background: active ? 'rgba(107,79,255,.15)' : 'var(--s2)', color: active ? 'var(--ac2)' : 'var(--t2)', transition: 'all .15s' };
+}
+function onboardLangChipStyle(active: boolean): CSSProperties {
+  return { padding: '6px 14px', borderRadius: 'var(--r)', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: active ? '1px solid var(--ac)' : '1px solid var(--bd)', background: active ? 'rgba(107,79,255,.15)' : 'var(--s2)', color: active ? 'var(--ac2)' : 'var(--t2)', transition: 'all .15s' };
+}
+
+const s: Record<string, CSSProperties> = {
   root: {
     minHeight: '100vh',
     background: 'var(--bg)',
@@ -65,13 +75,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     justifyContent: 'center',
     marginBottom: 28,
   },
-  dot: (active: boolean, done: boolean): CSSProperties => ({
-    width: active ? 20 : 8,
-    height: 8,
-    borderRadius: 4,
-    background: done || active ? 'var(--ac)' : 'var(--s3)',
-    transition: 'all .3s ease',
-  }),
   label: {
     display: 'block',
     fontSize: 13,
@@ -111,34 +114,12 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     gap: 8,
     marginTop: 8,
   },
-  chip: (active: boolean): CSSProperties => ({
-    padding: '6px 14px',
-    borderRadius: 20,
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: 'pointer',
-    border: active ? '1px solid var(--ac)' : '1px solid var(--bd)',
-    background: active ? 'rgba(107,79,255,.15)' : 'var(--s2)',
-    color: active ? 'var(--ac2)' : 'var(--t2)',
-    transition: 'all .15s',
-  }),
   langChips: {
     display: 'flex',
     gap: 8,
     marginTop: 8,
     flexWrap: 'wrap' as const,
   },
-  langChip: (active: boolean): CSSProperties => ({
-    padding: '6px 14px',
-    borderRadius: 'var(--r)',
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: 'pointer',
-    border: active ? '1px solid var(--ac)' : '1px solid var(--bd)',
-    background: active ? 'rgba(107,79,255,.15)' : 'var(--s2)',
-    color: active ? 'var(--ac2)' : 'var(--t2)',
-    transition: 'all .15s',
-  }),
   btns: {
     display: 'flex',
     gap: 10,
@@ -289,7 +270,7 @@ export default function OnboardingView({ user, onDone, onBack }: Props) {
         )}
         <div style={s.dots}>
           {steps.map((_, i) => (
-            <div key={i} style={s.dot(i === step, i < step)} />
+            <div key={i} style={onboardDotStyle(i === step, i < step)} />
           ))}
         </div>
 
@@ -385,7 +366,7 @@ export default function OnboardingView({ user, onDone, onBack }: Props) {
               {TONES.map(tone => (
                 <button
                   key={tone}
-                  style={s.chip(selectedTones.includes(tone))}
+                  style={onboardChipStyle(selectedTones.includes(tone))}
                   onClick={() => toggleTone(tone)}
                   type="button"
                 >
@@ -398,7 +379,7 @@ export default function OnboardingView({ user, onDone, onBack }: Props) {
               {LANGUAGES.map(l => (
                 <button
                   key={l.code}
-                  style={s.langChip(lang === l.code)}
+                  style={onboardLangChipStyle(lang === l.code)}
                   onClick={() => setLang(l.code)}
                   type="button"
                 >

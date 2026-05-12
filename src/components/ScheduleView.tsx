@@ -43,14 +43,18 @@ const DEMO_SCHEDULED = [
   },
 ];
 
-const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
+function scheduleToneBadgeStyle(tone: string): CSSProperties {
+  return { fontSize: 10, fontWeight: 700, color: toneColor(tone), textTransform: 'uppercase' as const, letterSpacing: '.5px' };
+}
+
+const s: Record<string, CSSProperties> = {
   root: {
     padding: 24,
     animation: 'fadeIn .2s ease',
   },
   list: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     gap: 10,
     maxWidth: 700,
   },
@@ -92,13 +96,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     gap: 8,
     marginBottom: 6,
   },
-  toneBadge: (tone: string): CSSProperties => ({
-    fontSize: 10,
-    fontWeight: 700,
-    color: toneColor(tone),
-    textTransform: 'uppercase' as const,
-    letterSpacing: '.5px',
-  }),
   angle: {
     fontSize: 12,
     color: 'var(--t3)',
@@ -216,7 +213,7 @@ export default function ScheduleView({ user, demoMode }: Props) {
               )}
               <div style={s.content}>
                 <div style={s.toneRow}>
-                  <span style={s.toneBadge(post.tone)}>{post.tone}</span>
+                  <span style={scheduleToneBadgeStyle(post.tone)}>{post.tone}</span>
                   <span style={{ color: 'var(--bd)', fontSize: 12 }}>•</span>
                   <span style={s.angle}>{post.angle}</span>
                 </div>

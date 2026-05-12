@@ -158,7 +158,17 @@ const DEMO_POSTS = [
   },
 ];
 
-const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
+function postChipStyle(active: boolean): CSSProperties {
+  return { padding: '5px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: active ? '1px solid var(--ac)' : '1px solid var(--bd)', background: active ? 'rgba(107,79,255,.15)' : 'var(--s1)', color: active ? 'var(--ac2)' : 'var(--t3)', transition: 'all .15s', fontFamily: 'var(--head)', textTransform: 'capitalize' as const };
+}
+function postToneBadgeStyle(tone: string): CSSProperties {
+  return { padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${toneColor(tone)}22`, color: toneColor(tone), border: `1px solid ${toneColor(tone)}44`, letterSpacing: '.3px', textTransform: 'uppercase' as const, flexShrink: 0 };
+}
+function skeletonLineStyle(w: string, h = 12): CSSProperties {
+  return { height: h, background: 'var(--s3)', borderRadius: 4, width: w };
+}
+
+const s: Record<string, CSSProperties> = {
   root: {
     padding: 24,
     animation: 'fadeIn .2s ease',
@@ -176,19 +186,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     gap: 6,
     flexWrap: 'wrap' as const,
   },
-  chip: (active: boolean): CSSProperties => ({
-    padding: '5px 14px',
-    borderRadius: 20,
-    fontSize: 12.5,
-    fontWeight: 500,
-    cursor: 'pointer',
-    border: active ? '1px solid var(--ac)' : '1px solid var(--bd)',
-    background: active ? 'rgba(107,79,255,.15)' : 'var(--s1)',
-    color: active ? 'var(--ac2)' : 'var(--t3)',
-    transition: 'all .15s',
-    fontFamily: 'var(--head)',
-    textTransform: 'capitalize' as const,
-  }),
   generateBtn: {
     padding: '9px 20px',
     background: 'var(--ac)',
@@ -226,18 +223,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     justifyContent: 'space-between',
     gap: 8,
   },
-  toneBadge: (tone: string): CSSProperties => ({
-    padding: '3px 10px',
-    borderRadius: 12,
-    fontSize: 11,
-    fontWeight: 700,
-    background: `${toneColor(tone)}22`,
-    color: toneColor(tone),
-    border: `1px solid ${toneColor(tone)}44`,
-    letterSpacing: '.3px',
-    textTransform: 'uppercase' as const,
-    flexShrink: 0,
-  }),
   charCount: {
     fontSize: 11,
     color: 'var(--t3)',
@@ -305,12 +290,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     gap: 12,
     animation: 'pulse 1.5s ease-in-out infinite',
   },
-  skeletonLine: (w: string, h = 12): CSSProperties => ({
-    height: h,
-    background: 'var(--s3)',
-    borderRadius: 4,
-    width: w,
-  }),
   emptyState: {
     gridColumn: '1 / -1',
     textAlign: 'center' as const,
@@ -456,15 +435,17 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
       const generated = await generatePostsAction({
         userId: user._id as any,
         apiKey: prefs.apikey,
-        profile: [
-          prefs.name && `Name: ${prefs.name}`,
-          prefs.role && `Role: ${prefs.role}`,
-          prefs.bio && `Bio: ${prefs.bio}`,
-          prefs.projects && `Projects: ${prefs.projects}`,
-          prefs.stack && `Stack: ${prefs.stack}`,
-          prefs.audience && `Audience: ${prefs.audience}`,
-          prefs.avoid && `Avoid: ${prefs.avoid}`,
-        ].filter(Boolean).join('\n'),
+        profile: {
+          name: prefs.name || undefined,
+          role: prefs.role || undefined,
+          bio: prefs.bio || undefined,
+          projects: prefs.projects || undefined,
+          stack: prefs.stack || undefined,
+          audience: prefs.audience || undefined,
+          tone: prefs.tone || undefined,
+          avoid: prefs.avoid || undefined,
+          contentPillars: prefs.contentPillars || undefined,
+        },
         lang: prefs.lang || 'English',
         count,
       });
@@ -519,7 +500,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
           {TONES.map(t => (
             <button
               key={t}
-              style={s.chip(toneFilter === t)}
+              style={postChipStyle(toneFilter === t)}
               onClick={() => setToneFilter(t)}
             >
               {t}
@@ -548,16 +529,16 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
         {generating && Array.from({ length: 9 }).map((_, i) => (
           <div key={`sk-${i}`} style={s.skeletonCard}>
             <div style={{ display: 'flex', gap: 8 }}>
-              <div style={s.skeletonLine('25%', 18)} />
+              <div style={skeletonLineStyle('25%', 18)} />
               <div style={{ flex: 1 }} />
-              <div style={s.skeletonLine('15%', 14)} />
+              <div style={skeletonLineStyle('15%', 14)} />
             </div>
-            <div style={s.skeletonLine('80%', 11)} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={s.skeletonLine('100%')} />
-              <div style={s.skeletonLine('90%')} />
-              <div style={s.skeletonLine('95%')} />
-              <div style={s.skeletonLine('70%')} />
+            <div style={skeletonLineStyle('80%', 11)} />
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+              <div style={skeletonLineStyle('100%')} />
+              <div style={skeletonLineStyle('90%')} />
+              <div style={skeletonLineStyle('95%')} />
+              <div style={skeletonLineStyle('70%')} />
             </div>
           </div>
         ))}
@@ -574,7 +555,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
               onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bd)')}
             >
               <div style={s.cardTop}>
-                <span style={s.toneBadge(post.tone)}>{post.tone}</span>
+                <span style={postToneBadgeStyle(post.tone)}>{post.tone}</span>
                 <span style={s.charCount}>{post.content.length}c</span>
               </div>
 

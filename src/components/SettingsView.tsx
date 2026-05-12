@@ -19,7 +19,11 @@ const LANGUAGES = [
   { code: 'Spanish', label: 'ES' },
 ];
 
-const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
+function settingsChipStyle(active: boolean): CSSProperties {
+  return { padding: '5px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: active ? '1px solid var(--ac)' : '1px solid var(--bd)', background: active ? 'rgba(107,79,255,.15)' : 'var(--s2)', color: active ? 'var(--ac2)' : 'var(--t2)', transition: 'all .15s', fontFamily: 'var(--head)' };
+}
+
+const s: Record<string, CSSProperties> = {
   root: {
     padding: 24,
     maxWidth: 640,
@@ -89,18 +93,6 @@ const s: Record<string, CSSProperties | ((...args: any[]) => CSSProperties)> = {
     gap: 8,
     marginTop: 4,
   },
-  chip: (active: boolean): CSSProperties => ({
-    padding: '5px 14px',
-    borderRadius: 20,
-    fontSize: 12.5,
-    fontWeight: 500,
-    cursor: 'pointer',
-    border: active ? '1px solid var(--ac)' : '1px solid var(--bd)',
-    background: active ? 'rgba(107,79,255,.15)' : 'var(--s2)',
-    color: active ? 'var(--ac2)' : 'var(--t2)',
-    transition: 'all .15s',
-    fontFamily: 'var(--head)',
-  }),
   langChips: {
     display: 'flex',
     gap: 8,
@@ -301,7 +293,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
           <label style={s.label}>Preferred tones</label>
           <div style={s.chips}>
             {TONES.map(tone => (
-              <button key={tone} style={s.chip(selectedTones.includes(tone))} onClick={() => toggleTone(tone)} type="button">
+              <button key={tone} style={settingsChipStyle(selectedTones.includes(tone))} onClick={() => toggleTone(tone)} type="button">
                 {tone}
               </button>
             ))}
@@ -313,7 +305,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
             {LANGUAGES.map(l => (
               <button
                 key={l.code}
-                style={s.chip(lang === l.code)}
+                style={settingsChipStyle(lang === l.code)}
                 onClick={() => setLang(l.code)}
                 type="button"
               >
