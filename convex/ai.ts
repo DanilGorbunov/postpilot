@@ -169,6 +169,69 @@ Keep the core message and key points. Adjust the voice, structure, and phrasing 
   },
 });
 
+export const parseUrlToPost = action({
+  args: {
+    apiKey: v.string(),
+    url: v.string(),
+    topic: v.string(),
+    lang: v.optional(v.string()),
+  },
+  handler: async (_ctx, args) => {
+    const lang = args.lang ?? "English";
+
+    let html = "";
+    try {
+      const resp = await fetch(args.url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; PostPilot/1.0; +https://postpilot.ai)" },
+        signal: AbortSignal.timeout(10000),
+      });
+      html = await resp.text();
+    } catch {
+      throw new Error("Could not fetch URL. Check the link and try again.");
+    }
+
+    // Strip scripts, styles, nav, footer, then all tags → plain text
+    const text = html
+      .replace(/<(script|style|nav|footer|header|aside)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&[a-z]+;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 7000);
+
+    const systemPrompt = `You are an expert LinkedIn content strategist.
+Given an article, extract key information and write an engaging LinkedIn post.
+Write in ${lang}.
+Return ONLY a valid JSON object — no markdown, no code fences, just raw JSON.`;
+
+    const userMessage = `Article URL: ${args.url}
+Topic category: ${args.topic}
+
+Article text (may be truncated):
+${text}
+
+Return a JSON object with:
+- "headline": the article's main headline or title (concise, 1 sentence)
+- "summary": 2-3 sentence factual summary of the article
+- "tone": one of "builder", "insight", "story", "opinion", "tactical"
+- "angle": the perspective/angle of the LinkedIn post (1 sentence, no underscores)
+- "post": a compelling LinkedIn post about this article. Add your professional perspective and insight. 200-350 words. End with 3-5 relevant hashtags on a new line.`;
+
+    const raw = await callClaude(args.apiKey, systemPrompt, userMessage, 2048);
+
+    let result: { headline: string; summary: string; tone: string; angle: string; post: string };
+    try {
+      result = JSON.parse(raw);
+    } catch {
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("Failed to parse response from Claude");
+      result = JSON.parse(match[0]);
+    }
+
+    return result;
+  },
+});
+
 export const generateVariants = action({
   args: {
     apiKey: v.string(),

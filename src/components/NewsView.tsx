@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
 
@@ -191,12 +191,19 @@ const s: Record<string, CSSProperties> = {
   },
 };
 
+function isUrl(s: string) {
+  return /^https?:\/\/.+\..+/.test(s.trim());
+}
+
 export default function NewsView({ user, prefs, demoMode }: Props) {
   const [newHeadline, setNewHeadline] = useState('');
   const [newTopic, setNewTopic] = useState('AI');
   const [newContent, setNewContent] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState('');
+  const [parsedPost, setParsedPost] = useState<{ tone: string; angle: string; post: string } | null>(null);
 
   const rawNews = useQuery(
     api.news.getNews,
@@ -205,7 +212,33 @@ export default function NewsView({ user, prefs, demoMode }: Props) {
 
   const newsPosts = demoMode ? DEMO_NEWS : (rawNews ?? []);
   const createNewsPost = useMutation(api.news.createNewsPost);
+  const createManyPosts = useMutation(api.posts.createManyPosts);
   const saveNewsAsPost = useMutation(api.news.saveNewsAsPost);
+  const parseUrlAction = useAction(api.ai.parseUrlToPost);
+
+  const urlDetected = isUrl(newHeadline);
+
+  const handleParseUrl = async () => {
+    if (!prefs?.apikey || !urlDetected || demoMode) return;
+    setParsing(true);
+    setParseError('');
+    setParsedPost(null);
+    try {
+      const result = await parseUrlAction({
+        apiKey: prefs.apikey,
+        url: newHeadline.trim(),
+        topic: newTopic,
+      });
+      // Fill form fields with parsed data
+      setNewHeadline(result.headline);
+      setNewContent(result.summary);
+      setParsedPost({ tone: result.tone, angle: result.angle, post: result.post });
+    } catch (e: any) {
+      setParseError(e?.message ?? 'Failed to parse URL');
+    } finally {
+      setParsing(false);
+    }
+  };
 
   const handleAdd = async () => {
     if (!newHeadline.trim() || demoMode) return;
@@ -217,8 +250,17 @@ export default function NewsView({ user, prefs, demoMode }: Props) {
         headline: newHeadline.trim(),
         content: newContent.trim() || newHeadline.trim(),
       });
+      // If we have a generated post, save it to Posts too
+      if (parsedPost) {
+        await createManyPosts({
+          userId: user._id as any,
+          posts: [{ tone: parsedPost.tone, angle: parsedPost.angle, content: parsedPost.post }],
+        });
+      }
       setNewHeadline('');
       setNewContent('');
+      setParsedPost(null);
+      setParseError('');
       setShowForm(false);
     } finally {
       setAdding(false);
@@ -256,13 +298,13 @@ export default function NewsView({ user, prefs, demoMode }: Props) {
         <div style={{ background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 'var(--r2)', padding: 18, marginBottom: 20, maxWidth: 700, animation: 'fadeIn .2s ease' }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             <input
-              style={{ ...s.input, flex: 1 }}
+              style={{ ...s.input, flex: 1, borderColor: urlDetected ? 'rgba(107,79,255,.5)' : undefined }}
               type="text"
-              placeholder="Headline..."
+              placeholder="Paste a URL or enter a headline..."
               value={newHeadline}
-              onChange={e => setNewHeadline(e.target.value)}
+              onChange={e => { setNewHeadline(e.target.value); setParsedPost(null); setParseError(''); }}
               onFocus={e => (e.target.style.borderColor = 'var(--ac)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--bd)')}
+              onBlur={e => (e.target.style.borderColor = urlDetected ? 'rgba(107,79,255,.5)' : 'var(--bd)')}
             />
             <select
               style={s.select}
@@ -272,6 +314,58 @@ export default function NewsView({ user, prefs, demoMode }: Props) {
               {TOPICS.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
+
+          {/* URL parse button */}
+          {urlDetected && !parsedPost && (
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
+                marginBottom: 10,
+                padding: '8px 16px',
+                background: parsing ? 'var(--s3)' : 'rgba(107,79,255,.15)',
+                border: '1px solid rgba(107,79,255,.35)',
+                borderRadius: 'var(--r)',
+                color: 'var(--ac2)',
+                fontFamily: 'var(--head)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: parsing ? 'default' : 'pointer',
+                transition: 'all .15s',
+                width: '100%',
+              }}
+              onClick={handleParseUrl}
+              disabled={parsing || !prefs?.apikey}
+              onMouseEnter={e => { if (!parsing) e.currentTarget.style.background = 'rgba(107,79,255,.25)'; }}
+              onMouseLeave={e => { if (!parsing) e.currentTarget.style.background = 'rgba(107,79,255,.15)'; }}
+            >
+              {parsing
+                ? <><span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span> Parsing article...</>
+                : <>✦ Parse URL → Generate Post{!prefs?.apikey && <span style={{ opacity: .5, fontSize: 11, marginLeft: 6 }}>(API key required)</span>}</>
+              }
+            </button>
+          )}
+
+          {/* Parsed post preview */}
+          {parsedPost && (
+            <div style={{ marginBottom: 10, padding: 12, background: 'var(--ok2)', border: '1px solid rgba(16,185,129,.2)', borderRadius: 'var(--r)', animation: 'fadeIn .2s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 700 }}>✓ Post generated</span>
+                <span style={{ fontSize: 11, color: 'var(--t3)' }}>— will be saved to Posts when you click Add</span>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                {parsedPost.post}
+              </div>
+            </div>
+          )}
+
+          {parseError && (
+            <div style={{ marginBottom: 10, padding: '8px 12px', background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 'var(--r)', fontSize: 12.5, color: 'var(--err)' }}>
+              {parseError}
+            </div>
+          )}
+
           <textarea
             style={{
               width: '100%',
@@ -300,7 +394,7 @@ export default function NewsView({ user, prefs, demoMode }: Props) {
             onMouseEnter={e => { if (!adding) e.currentTarget.style.background = 'var(--ac2)'; }}
             onMouseLeave={e => (e.currentTarget.style.background = 'var(--ac)')}
           >
-            {adding ? 'Adding...' : 'Add'}
+            {adding ? 'Saving...' : parsedPost ? 'Add to News + Save Post' : 'Add'}
           </button>
         </div>
       )}
