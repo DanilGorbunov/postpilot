@@ -138,9 +138,9 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 .field input{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--t1);font-family:var(--mono);font-size:13px;padding:10px 14px;border-radius:var(--r);outline:none;transition:border-color .15s}
 .field input:focus{border-color:var(--ac)}
 .field input::placeholder{color:var(--t3)}
-.field-pw{position:relative}
-.field-pw input{padding-right:40px}
-.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;display:flex;align-items:center;transition:color .15s}
+.pw-wrap{position:relative}
+.pw-wrap input{width:100%;padding-right:40px}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;display:flex;align-items:center;transition:color .15s;line-height:0}
 .pw-eye:hover{color:var(--t2)}
 .btn-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#3c4043;border:1px solid #dadce0;font-family:var(--mono);font-size:13px;font-weight:500;padding:11px;border-radius:var(--r);cursor:pointer;transition:all .15s;margin-bottom:4px}
 .btn-google:hover{background:#f8f9fa;box-shadow:0 1px 6px rgba(0,0,0,.2)}
@@ -505,7 +505,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
       </button>
       <div class="auth-divider" data-i18n="auth.divider">or</div>
       <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="danil@example.com"></div>
-      <div class="field field-pw"><label data-i18n="auth.label.password">Password</label><input type="password" id="login-pass" placeholder="••••••••"><button class="pw-eye" type="button" onclick="togglePw('login-pass',this)" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="field"><label data-i18n="auth.label.password">Password</label><div class="pw-wrap"><input type="password" id="login-pass" placeholder="••••••••"><button class="pw-eye" type="button" onclick="togglePw('login-pass',this)" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
       <button class="btn-submit" onclick="doLogin()" data-i18n="auth.btn.login">Log In →</button>
       <div class="auth-divider">or</div>
       <button class="btn-ghost-sm" style="width:100%;padding:10px" onclick="demoLogin()" data-i18n="auth.demo">🚀 Quick demo login (no password)</button>
@@ -519,7 +519,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
       <div class="auth-divider" data-i18n="auth.divider">or</div>
       <div class="field"><label data-i18n="auth.label.name">Name</label><input id="reg-name" placeholder="Danil"></div>
       <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="danil@example.com"></div>
-      <div class="field field-pw"><label data-i18n="auth.label.password">Password</label><input type="password" id="reg-pass" placeholder="••••••••"><button class="pw-eye" type="button" onclick="togglePw('reg-pass',this)" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="field"><label data-i18n="auth.label.password">Password</label><div class="pw-wrap"><input type="password" id="reg-pass" placeholder="••••••••"><button class="pw-eye" type="button" onclick="togglePw('reg-pass',this)" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
       <button class="btn-submit" onclick="doRegister()" data-i18n="auth.btn.register">Register →</button>
     </div>
 
@@ -1958,12 +1958,16 @@ Sheets AI — описав "budget tracker для SaaS" → отримав го�
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let USER = null;
 let PREFS = {};
+let isDemo = false;
+let userPosts = [];
 let deletedIds = new Set();
 let scheduled = [];
 let newsPosts = [];
 let selTone = 'all';
 let todayIdx = 0;
 let todayOpen = true;
+
+function stateKey(k) { return USER?.email ? `${k}_${USER.email}` : k; }
 
 // ── STORAGE HELPERS ───────────────────────────────────────────────────────────
 function save(key, val) { try { window.storage.set('pp_'+key, JSON.stringify(val)); } catch { localStorage.setItem('pp_'+key, JSON.stringify(val)); } }
@@ -1995,9 +1999,10 @@ async function init() {
 }
 
 async function loadAppState() {
-  deletedIds = new Set(loadSync('deleted', []));
-  scheduled = loadSync('scheduled', []);
-  newsPosts = loadSync('newsposts', []);
+  userPosts = loadSync(stateKey('posts'), []);
+  deletedIds = new Set(loadSync(stateKey('deleted'), []));
+  scheduled = loadSync(stateKey('scheduled'), []);
+  newsPosts = loadSync(stateKey('newsposts'), []);
   updateBadges();
 }
 
