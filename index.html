@@ -1961,30 +1961,17 @@ Sheets AI — описав "budget tracker для SaaS" → отримав го�
 ];
 
 // ── CARD PHOTOS ───────────────────────────────────────────────────────────────
-const CARD_PHOTOS = [
-  '1677442135703-1787eea5ce01', // AI visualization
-  '1555066931-4365d14bab8c',   // coding dark
-  '1499750310107-5fef28a66643', // laptop + coffee
-  '1460925895917-afdab827c52f', // business charts
-  '1485827404703-89b55fcc595e', // robot/AI tech
-  '1551288049-bebda4e38f71',   // data analytics
-  '1558618666-fcd25c85cd64',   // design tools
-  '1504868584819-f8e8b4b6d7e3', // tech workspace
-  '1611532736597-de2d4265fba3', // laptop work
-  '1516321318423-f06f85e504b3', // social/mobile
-  '1532619675605-1ede6c2ed2b0', // team collab
-  '1471897488648-5a7b4f32d453', // startup build
-];
-const TONE_PHOTOS = {
-  builder: [0,1,4,7,11],
-  insight: [2,5,9,10],
-  numbers: [3,5,8],
-  question: [2,6,10],
-  story: [2,8,11],
+// Picsum seeds per tone (consistent, no API key, no CORS)
+const TONE_SEEDS = {
+  builder: [1,10,20,42,50,64,77],
+  insight: [3,12,33,55,88,101],
+  numbers: [5,25,45,65,85,105],
+  question: [7,27,47,67,87,107],
+  story:   [9,29,49,69,89,109],
 };
 function cardPhoto(tone, idx) {
-  const pool = TONE_PHOTOS[tone] || [idx % CARD_PHOTOS.length];
-  return CARD_PHOTOS[pool[idx % pool.length]];
+  const pool = TONE_SEEDS[tone] || Array.from({length:12},(_,k)=>k*8+idx);
+  return pool[idx % pool.length];
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -2165,7 +2152,7 @@ function toggleTopic(el) { el.classList.toggle('on'); }
 function toggleTone(el, val) { document.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('on')); el.classList.add('on'); PREFS.tone = val; }
 function toggleLang(el, val) { document.querySelectorAll('.tone-chip[data-lang]').forEach(c => c.classList.remove('on')); el.classList.add('on'); el.dataset.lang = val; PREFS.lang = val; }
 
-function finishOnboarding() {
+async function finishOnboarding() {
   PREFS.name = document.getElementById('ob-name').value || USER.name;
   PREFS.role = document.getElementById('ob-role').value;
   PREFS.location = document.getElementById('ob-location').value;
@@ -2331,7 +2318,7 @@ function renderPosts() {
     const photoId = cardPhoto(p.t, i);
     return `<div class="post-card" id="pc${i}">
       <div class="card-img-wrap">
-        <img class="card-img" src="https://images.unsplash.com/photo-${photoId}?auto=format&fit=crop&w=560&h=136&q=75" alt="" loading="lazy">
+        <img class="card-img" src="https://picsum.photos/seed/${photoId}/560/136" alt="" loading="lazy">
         <div class="card-img-overlay"></div>
       </div>
       <div class="card-head">
