@@ -138,6 +138,10 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 .field input{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--t1);font-family:var(--mono);font-size:13px;padding:10px 14px;border-radius:var(--r);outline:none;transition:border-color .15s}
 .field input:focus{border-color:var(--ac)}
 .field input::placeholder{color:var(--t3)}
+.field-pw{position:relative}
+.field-pw input{padding-right:40px}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;display:flex;align-items:center;transition:color .15s}
+.pw-eye:hover{color:var(--t2)}
 .btn-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#3c4043;border:1px solid #dadce0;font-family:var(--mono);font-size:13px;font-weight:500;padding:11px;border-radius:var(--r);cursor:pointer;transition:all .15s;margin-bottom:4px}
 .btn-google:hover{background:#f8f9fa;box-shadow:0 1px 6px rgba(0,0,0,.2)}
 .btn-google svg{flex-shrink:0}
@@ -217,12 +221,19 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 .nav-item .ni{font-size:14px;width:18px;text-align:center}
 .nav-badge{margin-left:auto;font-size:9px;background:var(--ac);color:#fff;padding:1px 6px;border-radius:20px}
 .sidebar-footer{padding:12px 14px;border-top:1px solid var(--bd)}
-.sidebar-profile{display:flex;align-items:center;gap:10px;cursor:pointer}
+.sidebar-profile{display:flex;align-items:center;gap:10px;cursor:pointer;position:relative;border-radius:8px;padding:6px 4px;transition:background .15s}
+.sidebar-profile:hover{background:var(--s2)}
 .sp-av{width:32px;height:32px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
 .sp-name{font-size:12px;color:var(--t1);font-weight:500}
 .sp-email{font-size:10px;color:var(--t3)}
 .sp-logout{margin-left:auto;font-size:10px;color:var(--t3);cursor:pointer}
 .sp-logout:hover{color:var(--err)}
+.sp-menu{position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:var(--s1);border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);overflow:hidden;display:none;z-index:999}
+.sp-menu.open{display:block}
+.sp-menu-item{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:var(--t1);cursor:pointer;transition:background .12s}
+.sp-menu-item:hover{background:var(--s2)}
+.sp-menu-item.danger{color:var(--err)}
+.sp-menu-item svg{flex-shrink:0;opacity:.7}
 .theme-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:4px 0}
 .theme-toggle-lbl{font-size:10px;color:var(--t3);letter-spacing:.5px}
 .toggle-sw{width:36px;height:20px;border-radius:20px;background:var(--s3);border:1px solid var(--bd2);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;padding:0}
@@ -494,7 +505,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
       </button>
       <div class="auth-divider" data-i18n="auth.divider">or</div>
       <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="danil@example.com"></div>
-      <div class="field"><label data-i18n="auth.label.password">Password</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+      <div class="field field-pw"><label data-i18n="auth.label.password">Password</label><input type="password" id="login-pass" placeholder="••••••••"><button class="pw-eye" type="button" onclick="togglePw('login-pass',this)" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       <button class="btn-submit" onclick="doLogin()" data-i18n="auth.btn.login">Log In →</button>
       <div class="auth-divider">or</div>
       <button class="btn-ghost-sm" style="width:100%;padding:10px" onclick="demoLogin()" data-i18n="auth.demo">🚀 Quick demo login (no password)</button>
@@ -508,7 +519,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
       <div class="auth-divider" data-i18n="auth.divider">or</div>
       <div class="field"><label data-i18n="auth.label.name">Name</label><input id="reg-name" placeholder="Danil"></div>
       <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="danil@example.com"></div>
-      <div class="field"><label data-i18n="auth.label.password">Password</label><input type="password" id="reg-pass" placeholder="••••••••"></div>
+      <div class="field field-pw"><label data-i18n="auth.label.password">Password</label><input type="password" id="reg-pass" placeholder="••••••••"><button class="pw-eye" type="button" onclick="togglePw('reg-pass',this)" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       <button class="btn-submit" onclick="doRegister()" data-i18n="auth.btn.register">Register →</button>
     </div>
 
@@ -646,10 +657,20 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
           <span class="theme-toggle-lbl" id="theme-lbl">🌙 Dark</span>
           <button class="toggle-sw" id="theme-sw" onclick="toggleTheme()" title="Toggle theme"></button>
         </div>
-        <div class="sidebar-profile">
+        <div class="sidebar-profile" onclick="toggleProfileMenu(event)">
           <div class="sp-av" id="sp-av">D</div>
-          <div><div class="sp-name" id="sp-name">Danil</div><div class="sp-email" id="sp-email">...</div></div>
-          <div class="sp-logout" onclick="doLogout()" data-i18n-title="app.logout.title" title="Log out">↗</div>
+          <div style="flex:1;min-width:0"><div class="sp-name" id="sp-name">Danil</div><div class="sp-email" id="sp-email">...</div></div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.4"><path d="M18 15l-6-6-6 6"/></svg>
+          <div class="sp-menu" id="sp-menu">
+            <div class="sp-menu-item" onclick="event.stopPropagation();showView('v-settings')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <span data-i18n="menu.profile">Profile</span>
+            </div>
+            <div class="sp-menu-item danger" onclick="event.stopPropagation();doLogout()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span data-i18n="menu.logout">Log out</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2054,6 +2075,16 @@ function doRegister() {
   PREFS = { name };
   showView('v-onboard');
 }
+function toggleProfileMenu(e) {
+  e.stopPropagation();
+  const menu = Q('#sp-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) {
+    setTimeout(() => document.addEventListener('click', closeProfileMenu, {once:true}), 0);
+  }
+}
+function closeProfileMenu() { Q('#sp-menu')?.classList.remove('open'); }
+
 function doLogout() {
   saveSync('user', null);
   USER = null; PREFS = {};
@@ -2755,6 +2786,7 @@ const STRINGS = {
     'toast.no.posts':'No posts available','toast.linkedin.open':'✓ Copied! Opening LinkedIn...',
     'toast.no.apikey':'Add Anthropic API key in Settings →','toast.post.restored':'Post #{n} restored',
     'toast.user.notfound':'Account not found. Please register.','toast.fill.fields':'Fill in name and email',
+    'menu.profile':'Profile','menu.logout':'Log out',
     'toast.fill.email':'Enter email','toast.welcome.demo':'Welcome to demo!','toast.logout':'See you!',
     'toast.news.ready':'✓ {n} news posts ready','toast.gen.error':'Generation error',
     'toast.saved.tolist':'✓ Added to posts list','toast.photo.opened':'✓ Image opened in new tab — save with right click',
@@ -2837,6 +2869,7 @@ const STRINGS = {
     'toast.no.posts':'Немає доступних постів','toast.linkedin.open':'✓ Скопійовано! Відкриваю LinkedIn...',
     'toast.no.apikey':'Додай Anthropic API key в Налаштування →','toast.post.restored':'Пост #{n} відновлено',
     'toast.user.notfound':'Акаунт не знайдено. Зареєструйся.','toast.fill.fields':"Заповни ім'я і email",
+    'menu.profile':'Профіль','menu.logout':'Вийти',
     'toast.fill.email':'Введи email','toast.welcome.demo':'Ласкаво просимо до демо!','toast.logout':'До зустрічі!',
     'toast.news.ready':'✓ {n} постів з новин готові','toast.gen.error':'Помилка генерації',
     'toast.saved.tolist':'✓ Додано до списку постів','toast.photo.opened':'✓ Зображення відкрито у новій вкладці — збережи через ПКМ',
@@ -2857,6 +2890,14 @@ function applyLang(lang) {
 }
 function switchUiLang() { applyLang(uiLang === 'en' ? 'uk' : 'en'); }
 
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = show
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
 function Q(s) { return document.querySelector(s); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 let tt;
