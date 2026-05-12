@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PostPilot — AI LinkedIn Posts</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800;900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06060a;--s1:#0d0d14;--s2:#12121c;--s3:#1a1a26;
+  --bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.14);
+  --t1:#eae6ff;--t2:#8884a8;--t3:#3d3a52;
+  --ac:#6b4fff;--ac2:#8b6fff;--ac3:rgba(107,79,255,.15);
+  --ok:#10b981;--ok2:rgba(16,185,129,.12);
+  --warn:#f59e0b;--err:#ef4444;--li:#0a66c2;
+  --head:'Syne',sans-serif;--mono:'DM Mono',monospace;
+  --r:8px;--r2:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* ── VIEWS ── */
+.view{display:none}.view.active{display:flex;flex-direction:column;min-height:100vh}
+
+/* ─────────────────────── LANDING ─────────────────────── */
+#v-landing{background:var(--bg)}
+
+/* noise overlay */
+#v-landing::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+
+/* gradient orbs */
+.orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0}
+.orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(107,79,255,.25) 0%,transparent 70%);top:-200px;left:-100px;animation:drift1 20s ease-in-out infinite}
+.orb2{width:400px;height:400px;background:radial-gradient(circle,rgba(139,111,255,.15) 0%,transparent 70%);bottom:-100px;right:-50px;animation:drift2 25s ease-in-out infinite}
+@keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
+@keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,60px)}}
+
+.land-inner{position:relative;z-index:1;flex:1}
+
+/* nav */
+.land-nav{display:flex;align-items:center;justify-content:space-between;padding:20px 40px;border-bottom:1px solid var(--bd)}
+.land-logo{font-family:var(--head);font-size:20px;font-weight:900;color:var(--t1);letter-spacing:-.5px}
+.land-logo em{color:var(--ac);font-style:normal}
+.nav-btns{display:flex;gap:10px;align-items:center}
+.btn-ghost-sm{font-family:var(--mono);font-size:12px;padding:8px 16px;border:1px solid var(--bd2);color:var(--t2);background:none;border-radius:var(--r);cursor:pointer;transition:all .15s}
+.btn-ghost-sm:hover{color:var(--t1);border-color:var(--ac)}
+.btn-ac-sm{font-family:var(--mono);font-size:12px;font-weight:500;padding:8px 18px;background:var(--ac);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s}
+.btn-ac-sm:hover{background:var(--ac2);transform:translateY(-1px)}
+
+/* hero */
+.hero{text-align:center;padding:100px 20px 80px;max-width:800px;margin:0 auto}
+.hero-tag{display:inline-block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ac2);border:1px solid rgba(139,111,255,.3);background:rgba(107,79,255,.08);padding:5px 14px;border-radius:20px;margin-bottom:28px}
+.hero h1{font-family:var(--head);font-size:clamp(42px,7vw,80px);font-weight:900;line-height:1.05;letter-spacing:-2px;margin-bottom:20px}
+.hero h1 span{background:linear-gradient(135deg,var(--ac) 0%,var(--ac2) 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:16px;line-height:1.7;color:var(--t2);max-width:520px;margin:0 auto 40px}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-hero{font-family:var(--head);font-size:14px;font-weight:700;padding:14px 32px;border-radius:var(--r2);cursor:pointer;transition:all .2s;border:none;letter-spacing:.3px}
+.btn-hero-ac{background:var(--ac);color:#fff;box-shadow:0 0 40px rgba(107,79,255,.4)}
+.btn-hero-ac:hover{background:var(--ac2);transform:translateY(-2px);box-shadow:0 0 60px rgba(107,79,255,.5)}
+.btn-hero-out{background:none;color:var(--t1);border:1px solid var(--bd2)}
+.btn-hero-out:hover{border-color:var(--ac);color:var(--ac)}
+
+/* stats row */
+.stats{display:flex;justify-content:center;gap:40px;padding:40px 20px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-n{font-family:var(--head);font-size:36px;font-weight:900;color:var(--t1)}
+.stat-n span{color:var(--ac)}
+.stat-l{font-size:11px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+
+/* features */
+.features{max-width:1000px;margin:0 auto;padding:60px 24px}
+.features-title{font-family:var(--head);font-size:28px;font-weight:800;text-align:center;margin-bottom:48px}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.feat-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:24px;transition:border-color .15s,transform .15s}
+.feat-card:hover{border-color:rgba(107,79,255,.4);transform:translateY(-2px)}
+.feat-icon{font-size:28px;margin-bottom:14px}
+.feat-title{font-family:var(--head);font-size:16px;font-weight:700;margin-bottom:8px}
+.feat-desc{font-size:12px;line-height:1.7;color:var(--t2)}
+
+/* how it works */
+.how{background:var(--s1);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:60px 24px;text-align:center}
+.how h2{font-family:var(--head);font-size:28px;font-weight:800;margin-bottom:48px}
+.steps{display:flex;justify-content:center;gap:0;max-width:800px;margin:0 auto;flex-wrap:wrap}
+.step{flex:1;min-width:180px;padding:0 20px;position:relative}
+.step:not(:last-child)::after{content:'→';position:absolute;right:-10px;top:20px;font-size:20px;color:var(--t3)}
+.step-n{font-family:var(--head);font-size:36px;font-weight:900;color:var(--ac);margin-bottom:10px}
+.step-t{font-family:var(--head);font-size:14px;font-weight:700;margin-bottom:6px}
+.step-d{font-size:11px;color:var(--t2);line-height:1.6}
+
+/* pricing */
+.pricing{max-width:700px;margin:0 auto;padding:60px 24px;text-align:center}
+.pricing h2{font-family:var(--head);font-size:28px;font-weight:800;margin-bottom:12px}
+.pricing-sub{font-size:13px;color:var(--t2);margin-bottom:40px}
+.price-card{background:var(--s1);border:1px solid rgba(107,79,255,.4);border-radius:var(--r2);padding:36px;box-shadow:0 0 60px rgba(107,79,255,.1)}
+.price-badge{display:inline-block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ac);border:1px solid var(--ac);padding:3px 12px;border-radius:20px;margin-bottom:20px}
+.price-n{font-family:var(--head);font-size:56px;font-weight:900;color:var(--t1);margin-bottom:4px}
+.price-n sup{font-size:24px;vertical-align:super}
+.price-period{font-size:12px;color:var(--t2);margin-bottom:24px}
+.price-features{list-style:none;text-align:left;margin-bottom:28px;display:flex;flex-direction:column;gap:10px}
+.price-features li{font-size:13px;color:var(--t1);display:flex;align-items:center;gap:10px}
+.price-features li::before{content:'✓';color:var(--ok);font-weight:700;flex-shrink:0}
+
+/* footer */
+.land-footer{padding:30px 40px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.land-footer-logo{font-family:var(--head);font-size:14px;font-weight:700}
+.land-footer-logo em{color:var(--ac);font-style:normal}
+.land-footer p{font-size:11px;color:var(--t3)}
+
+/* ─────────────────────── AUTH ─────────────────────── */
+#v-auth{align-items:center;justify-content:center;background:var(--bg);padding:20px}
+.auth-box{background:var(--s1);border:1px solid var(--bd2);border-radius:var(--r2);padding:40px;width:100%;max-width:420px;position:relative;overflow:hidden}
+.auth-box::before{content:'';position:absolute;top:-60px;left:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(107,79,255,.2) 0%,transparent 70%);pointer-events:none}
+.auth-logo{font-family:var(--head);font-size:22px;font-weight:900;text-align:center;margin-bottom:6px}
+.auth-logo em{color:var(--ac);font-style:normal}
+.auth-sub{font-size:12px;color:var(--t2);text-align:center;margin-bottom:32px}
+.auth-tabs{display:flex;gap:0;background:var(--s2);border-radius:var(--r);padding:3px;margin-bottom:28px}
+.auth-tab{flex:1;padding:8px;font-family:var(--mono);font-size:12px;border:none;background:none;color:var(--t2);cursor:pointer;border-radius:6px;transition:all .15s}
+.auth-tab.on{background:var(--ac);color:#fff}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.field input{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--t1);font-family:var(--mono);font-size:13px;padding:10px 14px;border-radius:var(--r);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--ac)}
+.field input::placeholder{color:var(--t3)}
+.btn-submit{width:100%;background:var(--ac);color:#fff;border:none;font-family:var(--head);font-size:14px;font-weight:700;padding:12px;border-radius:var(--r);cursor:pointer;transition:all .15s;margin-top:4px}
+.btn-submit:hover{background:var(--ac2);transform:translateY(-1px)}
+.auth-back{font-size:11px;color:var(--t3);text-align:center;margin-top:16px;cursor:pointer}
+.auth-back:hover{color:var(--t2)}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--t3);font-size:11px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+/* ─────────────────────── ONBOARDING ─────────────────────── */
+#v-onboard{align-items:center;justify-content:center;background:var(--bg);padding:20px}
+.onboard-wrap{width:100%;max-width:680px}
+.onboard-header{text-align:center;margin-bottom:36px}
+.onboard-header h2{font-family:var(--head);font-size:28px;font-weight:800;margin-bottom:8px}
+.onboard-header p{font-size:13px;color:var(--t2)}
+.progress-steps{display:flex;gap:0;margin-bottom:36px;position:relative}
+.progress-steps::before{content:'';position:absolute;top:14px;left:0;right:0;height:1px;background:var(--bd)}
+.prog-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;z-index:1}
+.prog-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--bd);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t3);transition:all .2s}
+.prog-dot.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.prog-dot.active{background:var(--ac);border-color:var(--ac);color:#fff}
+.prog-label{font-size:10px;color:var(--t3);letter-spacing:.5px;text-align:center}
+.prog-step.active .prog-label{color:var(--t1)}
+
+.onboard-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:32px}
+.onboard-step{display:none}.onboard-step.active{display:block}
+.step-title{font-family:var(--head);font-size:18px;font-weight:700;margin-bottom:6px}
+.step-desc{font-size:12px;color:var(--t2);margin-bottom:24px;line-height:1.6}
+
+/* form elements */
+.frow{margin-bottom:18px}
+.frow label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.frow input,.frow textarea,.frow select{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--t1);font-family:var(--mono);font-size:12px;padding:10px 14px;border-radius:var(--r);outline:none;transition:border-color .15s}
+.frow input:focus,.frow textarea:focus,.frow select:focus{border-color:var(--ac)}
+.frow input::placeholder,.frow textarea::placeholder{color:var(--t3)}
+.frow textarea{resize:vertical;min-height:80px}
+.frow select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238884a8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.frow-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.frow-hint{font-size:10px;color:var(--t3);margin-top:5px}
+
+/* chips for tone */
+.tone-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.tone-chip{font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:20px;border:1px solid var(--bd);color:var(--t2);background:none;cursor:pointer;transition:all .15s}
+.tone-chip:hover{border-color:var(--ac);color:var(--ac)}
+.tone-chip.on{border-color:var(--ac);color:var(--ac);background:var(--ac3)}
+
+/* topics grid */
+.topic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:6px}
+.topic-item{font-size:11px;padding:8px 12px;border:1px solid var(--bd);border-radius:var(--r);color:var(--t2);cursor:pointer;transition:all .15s;text-align:center}
+.topic-item:hover{border-color:var(--ac);color:var(--ac)}
+.topic-item.on{border-color:var(--ac);color:var(--ac);background:var(--ac3)}
+
+.onboard-nav{display:flex;justify-content:space-between;margin-top:24px;align-items:center}
+.btn-back{font-family:var(--mono);font-size:12px;padding:10px 20px;border:1px solid var(--bd);color:var(--t2);background:none;border-radius:var(--r);cursor:pointer;transition:all .15s}
+.btn-back:hover{border-color:var(--t2);color:var(--t1)}
+.btn-next{font-family:var(--head);font-size:13px;font-weight:700;padding:10px 28px;background:var(--ac);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s}
+.btn-next:hover{background:var(--ac2)}
+.btn-next:disabled{background:var(--s3);color:var(--t3);cursor:not-allowed}
+
+/* ─────────────────────── DASHBOARD ─────────────────────── */
+#v-app{background:var(--bg);overflow:hidden}
+.app-shell{display:grid;grid-template-columns:220px 1fr;height:100vh}
+
+/* sidebar */
+.sidebar{background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-brand{padding:16px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px}
+.brand-logo{font-family:var(--head);font-size:16px;font-weight:900}
+.brand-logo em{color:var(--ac);font-style:normal}
+.brand-user{font-size:10px;color:var(--t3);margin-top:1px}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-section-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--t3);padding:6px 8px;margin-bottom:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r);color:var(--t2);font-size:12px;cursor:pointer;transition:all .15s;margin-bottom:2px;border:1px solid transparent}
+.nav-item:hover{color:var(--t1);background:var(--s2)}
+.nav-item.on{color:var(--t1);background:var(--s2);border-color:var(--bd)}
+.nav-item .ni{font-size:14px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;font-size:9px;background:var(--ac);color:#fff;padding:1px 6px;border-radius:20px}
+.sidebar-footer{padding:12px 14px;border-top:1px solid var(--bd)}
+.sidebar-profile{display:flex;align-items:center;gap:10px;cursor:pointer}
+.sp-av{width:32px;height:32px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.sp-name{font-size:12px;color:var(--t1);font-weight:500}
+.sp-email{font-size:10px;color:var(--t3)}
+.sp-logout{margin-left:auto;font-size:10px;color:var(--t3);cursor:pointer}
+.sp-logout:hover{color:var(--err)}
+
+/* main area */
+.main-area{overflow-y:auto;display:flex;flex-direction:column}
+
+/* topbar */
+.app-topbar{padding:12px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:12px;background:var(--s1);flex-shrink:0;position:sticky;top:0;z-index:10}
+.app-topbar-title{font-family:var(--head);font-size:15px;font-weight:700}
+.search-wrap{flex:1;max-width:280px;position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:.4}
+.search-input{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--t1);font-family:var(--mono);font-size:11px;padding:7px 12px 7px 32px;border-radius:var(--r);outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--ac)}
+.search-input::placeholder{color:var(--t3)}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.tb-pill{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border:1px solid;border-radius:20px}
+.tb-pill.ok{border-color:var(--ok);color:var(--ok)}
+.tb-pill.dim{border-color:var(--t3);color:var(--t3)}
+
+/* filter bar */
+.filter-bar{padding:8px 20px;border-bottom:1px solid var(--bd);display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.flbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--t3)}
+.chip{font-family:var(--mono);font-size:10px;padding:4px 12px;border-radius:20px;border:1px solid var(--bd);color:var(--t2);background:none;cursor:pointer;transition:all .12s}
+.chip:hover{color:var(--t1)}
+.chip.on[data-t=all]{border-color:var(--t2);color:var(--t1)}
+.chip.on[data-t=builder]{border-color:var(--ac);color:var(--ac);background:var(--ac3)}
+.chip.on[data-t=insight]{border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.08)}
+.chip.on[data-t=numbers]{border-color:var(--ok);color:var(--ok);background:var(--ok2)}
+.chip.on[data-t=question]{border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,.08)}
+.chip.on[data-t=story]{border-color:#f472b6;color:#f472b6;background:rgba(244,114,182,.08)}
+.chip-news{font-family:var(--mono);font-size:10px;padding:4px 14px;border-radius:20px;border:1px solid var(--ok);color:var(--ok);background:var(--ok2);cursor:pointer;transition:all .12s}
+.chip-news:hover{background:var(--ok);color:#fff}
+.fsep{width:1px;height:14px;background:var(--bd)}
+
+/* scroll area */
+.scroll-area{flex:1;overflow-y:auto;padding:16px 20px}
+
+/* today panel */
+.today-panel{background:var(--s1);border:1px solid var(--bd);border-left:3px solid var(--ok);border-radius:var(--r2);margin-bottom:16px;overflow:hidden;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.today-head{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--bd)}
+.today-pulse{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 2.5s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.today-lbl{font-family:var(--head);font-size:13px;font-weight:700;color:var(--ok)}
+.today-date{font-size:11px;color:var(--t2);margin-left:auto}
+.today-caret{font-size:11px;color:var(--t3);transition:transform .2s}
+.today-caret.open{transform:rotate(180deg)}
+.today-body{padding:16px;display:none}
+.today-body.open{display:block}
+.today-post-text{font-size:12px;line-height:1.85;color:var(--t1);white-space:pre-wrap;max-height:200px;overflow:hidden;position:relative;margin-bottom:14px}
+.today-post-text::after{content:'';position:absolute;bottom:0;left:0;right:0;height:50px;background:linear-gradient(transparent,var(--s1))}
+.today-meta{font-size:10px;color:var(--t3);margin-bottom:12px}
+.today-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-pub-today{font-family:var(--mono);font-size:11px;font-weight:500;padding:7px 16px;border-radius:var(--r);background:var(--ok);color:#fff;border:none;cursor:pointer;transition:opacity .15s}
+.btn-pub-today:hover{opacity:.85}
+.btn-skip-today{font-family:var(--mono);font-size:11px;padding:6px 14px;border:1px solid var(--bd);color:var(--t2);background:none;border-radius:var(--r);cursor:pointer;transition:all .15s}
+.btn-skip-today:hover{border-color:var(--t2);color:var(--t1)}
+.btn-close-today{font-family:var(--mono);font-size:11px;padding:6px 14px;border:1px solid var(--bd);color:var(--t3);background:none;border-radius:var(--r);cursor:pointer;margin-left:auto}
+.btn-close-today:hover{border-color:var(--err);color:var(--err)}
+
+/* tab content panels */
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* grid */
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+
+/* card */
+.post-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);display:flex;flex-direction:column;overflow:hidden;transition:border-color .12s,transform .12s,box-shadow .12s;cursor:default}
+.post-card:hover{border-color:var(--bd2);transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.post-card.copied{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.card-head{display:flex;align-items:center;gap:8px;padding:11px 14px 9px;border-bottom:1px solid var(--bd)}
+.card-num{font-size:10px;color:var(--t3);min-width:22px;font-weight:500}
+.tone-tag{font-size:8px;letter-spacing:.8px;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;font-weight:500}
+.t-builder{background:rgba(107,79,255,.1);border-color:rgba(107,79,255,.3);color:var(--ac2)}
+.t-insight{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:var(--warn)}
+.t-numbers{background:var(--ok2);border-color:rgba(16,185,129,.3);color:var(--ok)}
+.t-question{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.3);color:#a78bfa}
+.t-story{background:rgba(244,114,182,.08);border-color:rgba(244,114,182,.3);color:#f472b6}
+.card-angle{font-size:9px;color:var(--t3);margin-left:auto;max-width:120px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sch-badge{font-size:8px;color:var(--warn);border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.08);padding:2px 7px;border-radius:20px}
+.card-body{padding:14px;font-size:11px;line-height:1.85;color:var(--t2);white-space:pre-wrap;flex:1;transition:color .12s}
+.post-card:hover .card-body{color:var(--t1)}
+.card-foot{display:flex;align-items:center;gap:6px;padding:9px 14px;border-top:1px solid var(--bd);background:var(--bg)}
+.card-chars{font-size:9px;color:var(--t3)}
+.btn-card{font-family:var(--mono);font-size:9px;padding:4px 10px;border-radius:4px;cursor:pointer;transition:all .12s;border:1px solid transparent}
+.btn-del{background:none;color:var(--t3)}.btn-del:hover{border-color:var(--err);color:var(--err);background:rgba(239,68,68,.06)}
+.btn-sch{background:none;color:var(--t3)}.btn-sch:hover{border-color:var(--warn);color:var(--warn)}
+.btn-sch.on{border-color:rgba(245,158,11,.3);color:var(--warn);background:rgba(245,158,11,.08)}
+.btn-copy-card{font-family:var(--mono);font-size:9px;font-weight:500;padding:4px 12px;border-radius:4px;border:1px solid var(--bd2);color:var(--t2);background:var(--s2);cursor:pointer;transition:all .12s;margin-left:auto}
+.btn-copy-card:hover{border-color:var(--ac);color:var(--ac2);background:var(--ac3)}
+.post-card.copied .btn-copy-card{border-color:var(--ok);color:var(--ok)}
+
+/* scheduled */
+.sch-wrap{display:flex;flex-direction:column;gap:10px}
+.sch-card{background:var(--s1);border:1px solid var(--bd);border-left:3px solid var(--warn);border-radius:var(--r2);padding:14px 18px;display:flex;gap:16px;align-items:flex-start}
+.sch-when{flex-shrink:0;min-width:80px}
+.sch-when-lbl{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--warn)}
+.sch-when-day{font-size:12px;color:var(--t1);margin-top:3px;font-weight:500}
+.sch-text{flex:1;font-size:11px;line-height:1.65;color:var(--t2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sch-text.expanded{white-space:pre-wrap;overflow:visible}
+.sch-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.btn-sch-copy{font-family:var(--mono);font-size:9px;padding:4px 10px;border:1px solid rgba(16,185,129,.3);color:var(--ok);background:var(--ok2);border-radius:4px;cursor:pointer;transition:all .12s}
+.btn-sch-copy:hover{background:var(--ok);color:#fff}
+.btn-sch-rem{font-family:var(--mono);font-size:9px;padding:4px 10px;border:1px solid var(--bd);color:var(--t3);background:none;border-radius:4px;cursor:pointer;transition:all .12s}
+.btn-sch-rem:hover{border-color:var(--err);color:var(--err)}
+
+/* deleted */
+.del-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+.del-card{opacity:.4;transition:opacity .15s}.del-card:hover{opacity:.7}
+.btn-restore{font-family:var(--mono);font-size:9px;padding:4px 12px;border-radius:4px;border:1px solid var(--bd2);color:var(--t2);background:none;cursor:pointer;margin-left:auto;transition:all .12s}
+.btn-restore:hover{border-color:var(--ac);color:var(--ac2)}
+
+/* news tab */
+.news-header-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.news-header-title{font-family:var(--head);font-size:15px;font-weight:700}
+.topic-btns{display:flex;gap:6px;flex-wrap:wrap}
+.topic-btn-item{font-family:var(--mono);font-size:10px;padding:6px 14px;border-radius:20px;border:1px solid var(--bd2);color:var(--t2);background:none;cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:5px}
+.topic-btn-item:hover{border-color:var(--ac);color:var(--ac2)}
+.topic-btn-item.loading{opacity:.5;pointer-events:none}
+.news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;margin-top:10px}
+.news-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;transition:border-color .12s,transform .12s}
+.news-card:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.news-img-wrap{height:170px;overflow:hidden;background:var(--s2);position:relative;flex-shrink:0}
+.news-img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.85);transition:transform .3s}
+.news-card:hover .news-img{transform:scale(1.04)}
+.news-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--t3);background:linear-gradient(135deg,var(--s2),var(--s3))}
+.news-topic-pill{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:8px;letter-spacing:.8px;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.12);color:var(--t1);backdrop-filter:blur(4px)}
+.news-img-dl{position:absolute;bottom:8px;right:8px;font-family:var(--mono);font-size:8px;padding:3px 9px;border-radius:4px;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.1);color:var(--t1);cursor:pointer;backdrop-filter:blur(4px);transition:all .12s}
+.news-img-dl:hover{background:rgba(107,79,255,.8)}
+.news-source-row{font-size:9px;color:var(--t3);padding:9px 14px 4px;display:flex;align-items:center;gap:5px}
+.news-src-dot{width:4px;height:4px;border-radius:50%;background:var(--ac);flex-shrink:0}
+.news-body-text{font-size:11px;line-height:1.85;color:var(--t2);white-space:pre-wrap;padding:4px 14px 14px;flex:1}
+.news-foot{display:flex;align-items:center;gap:6px;padding:9px 14px;border-top:1px solid var(--bd);background:var(--bg)}
+.news-chars{font-size:9px;color:var(--t3)}
+.btn-news-save{font-family:var(--mono);font-size:9px;padding:4px 10px;border-radius:4px;border:1px solid rgba(16,185,129,.3);color:var(--ok);background:var(--ok2);cursor:pointer;transition:all .12s}
+.btn-news-save:hover{background:var(--ok);color:#fff}
+.btn-news-copy{font-family:var(--mono);font-size:9px;font-weight:500;padding:4px 12px;border-radius:4px;border:1px solid var(--bd2);color:var(--t2);background:var(--s2);cursor:pointer;margin-left:auto;transition:all .12s}
+.btn-news-copy:hover{border-color:var(--ac);color:var(--ac2)}
+.skel{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;animation:skel 1.5s infinite}
+.skel-img{height:170px;background:var(--s3)}
+.skel-l{height:10px;border-radius:4px;background:var(--s3);margin:10px 14px 6px}
+.skel-l.short{width:50%}.skel-l.long{width:90%}.skel-l.med{width:70%}
+@keyframes skel{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* settings */
+.settings-wrap{max-width:580px}
+.settings-section{margin-bottom:28px}
+.settings-section-title{font-family:var(--head);font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.btn-save-settings{font-family:var(--head);font-size:12px;font-weight:700;padding:9px 20px;background:var(--ac);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .12s}
+.btn-save-settings:hover{background:var(--ac2)}
+
+/* empty states */
+.empty-state{text-align:center;padding:60px 20px;color:var(--t3);font-size:12px;line-height:2.2}
+.empty-icon{font-size:32px;display:block;margin-bottom:12px;color:var(--t3)}
+
+/* toast */
+.toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--s2);border:1px solid var(--bd2);border-radius:var(--r2);padding:11px 16px;font-family:var(--mono);font-size:11px;color:var(--t1);box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastIn .2s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.toast.ok{border-color:rgba(16,185,129,.4);color:var(--ok)}
+.toast.err{border-color:rgba(239,68,68,.4);color:var(--err)}
+@keyframes toastIn{from{transform:translateY(12px) scale(.95);opacity:0}to{transform:none;opacity:1}}
+
+@media(max-width:700px){
+  .app-shell{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .frow-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ LANDING ══════════════════ -->
+<div class="view active" id="v-landing">
+  <div class="orb orb1"></div><div class="orb orb2"></div>
+  <div class="land-inner">
+    <nav class="land-nav">
+      <div class="land-logo">Post<em>Pilot</em></div>
+      <div class="nav-btns">
+        <button class="btn-ghost-sm lang-toggle" onclick="switchUiLang()">🇺🇦 UA</button>
+        <button class="btn-ghost-sm" onclick="showAuth('login')" data-i18n="nav.login">Log In</button>
+        <button class="btn-ac-sm" onclick="showAuth('register')" data-i18n="nav.signup">Start for Free</button>
+      </div>
+    </nav>
+
+    <div class="hero">
+      <div class="hero-tag" data-i18n="hero.tag">AI · LinkedIn · Automation</div>
+      <h1 data-i18n="hero.h1">Posts that<br><span>people read</span></h1>
+      <p data-i18n="hero.p">Enter your style and projects once — get 50 ready posts in your voice. Plus fresh AI and tech news already rewritten for you.</p>
+      <div class="hero-cta">
+        <button class="btn-hero btn-hero-ac" onclick="showAuth('register')" data-i18n="hero.cta1">Try for free →</button>
+        <button class="btn-hero btn-hero-out" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})" data-i18n="hero.cta2">How it works</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-n">50<span>+</span></div><div class="stat-lbl" data-i18n="stat.posts.lbl">posts in base</div></div>
+      <div class="stat"><div class="stat-n"><span>~</span>40<span>sec</span></div><div class="stat-lbl" data-i18n="stat.time.lbl">to generate</div></div>
+      <div class="stat"><div class="stat-n">5<span>×</span></div><div class="stat-lbl" data-i18n="stat.tones.lbl">different tones</div></div>
+      <div class="stat"><div class="stat-n">0<span>$</span></div><div class="stat-lbl" data-i18n="stat.start.lbl">to start</div></div>
+    </div>
+
+    <div id="features" class="features">
+      <h2 class="features-title" data-i18n="feat.title">What you get</h2>
+      <div class="feat-grid">
+        <div class="feat-card"><div class="feat-icon">✦</div><div class="feat-title" data-i18n="feat.1.title">Posts in your style</div><div class="feat-desc" data-i18n="feat.1.desc">Enter your projects, tone, audience — and 50 posts written in your voice, not generic AI text.</div></div>
+        <div class="feat-card"><div class="feat-icon">📰</div><div class="feat-title" data-i18n="feat.2.title">Fresh news → your insight</div><div class="feat-desc" data-i18n="feat.2.desc">AI finds the latest news in AI, tech, and design and rewrites them on your behalf — with your context and conclusions.</div></div>
+        <div class="feat-card"><div class="feat-icon">📅</div><div class="feat-title" data-i18n="feat.3.title">Scheduler</div><div class="feat-desc" data-i18n="feat.3.desc">Plan posts in advance. The "+ tomorrow" button queues a post. No more forgotten publications.</div></div>
+        <div class="feat-card"><div class="feat-icon">🎯</div><div class="feat-title" data-i18n="feat.4.title">Post for today</div><div class="feat-desc" data-i18n="feat.4.desc">One click — and the system suggests the best post to publish right now based on your history.</div></div>
+        <div class="feat-card"><div class="feat-icon">🔗</div><div class="feat-title" data-i18n="feat.5.title">One click → LinkedIn</div><div class="feat-desc" data-i18n="feat.5.desc">Approved a post — it's copied and LinkedIn is open. Maximum 30 seconds from selection to publishing.</div></div>
+        <div class="feat-card"><div class="feat-icon">🧠</div><div class="feat-title" data-i18n="feat.6.title">Learns from you</div><div class="feat-desc" data-i18n="feat.6.desc">The system remembers which posts you choose and gradually writes closer to your style.</div></div>
+      </div>
+    </div>
+
+    <div class="how">
+      <h2 data-i18n="how.title">How it works</h2>
+      <div class="steps">
+        <div class="step"><div class="step-n">01</div><div class="step-t" data-i18n="step.1.title">Register</div><div class="step-d" data-i18n="step.1.desc">Two fields — and you're in</div></div>
+        <div class="step"><div class="step-n">02</div><div class="step-t" data-i18n="step.2.title">Set up profile</div><div class="step-d" data-i18n="step.2.desc">Projects, style, audience, LinkedIn</div></div>
+        <div class="step"><div class="step-n">03</div><div class="step-t" data-i18n="step.3.title">Pick posts</div><div class="step-d" data-i18n="step.3.desc">50 ready + fresh news</div></div>
+        <div class="step"><div class="step-n">04</div><div class="step-t" data-i18n="step.4.title">Publish</div><div class="step-d" data-i18n="step.4.desc">One click → LinkedIn</div></div>
+      </div>
+    </div>
+
+    <div class="pricing">
+      <h2 data-i18n="pricing.title">Pricing</h2>
+      <p class="pricing-sub" data-i18n="pricing.sub">Currently free. Only need an Anthropic API key for AI generation.</p>
+      <div class="price-card">
+        <div class="price-badge" data-i18n="pricing.badge">BETA · FREE</div>
+        <div class="price-n"><sup>$</sup>0</div>
+        <div class="price-period" data-i18n="pricing.period">now · paid later</div>
+        <ul class="price-features">
+          <li data-i18n="pricing.f1">50 personalized posts</li>
+          <li data-i18n="pricing.f2">Post generation from news (AI + tech + design)</li>
+          <li data-i18n="pricing.f3">Scheduler and "post for today"</li>
+          <li data-i18n="pricing.f4">Learning from your choices</li>
+          <li data-i18n="pricing.f5">Your Anthropic API key (free tier available)</li>
+        </ul>
+        <button class="btn-hero btn-hero-ac" style="width:100%" onclick="showAuth('register')" data-i18n="pricing.cta">Start for free →</button>
+      </div>
+    </div>
+
+    <footer class="land-footer">
+      <div class="land-footer-logo">Post<em>Pilot</em></div>
+      <p data-i18n="footer.text">Made by a designer for designers and AI builders</p>
+    </footer>
+  </div>
+</div>
+
+<!-- ══════════════════ AUTH ══════════════════ -->
+<div class="view" id="v-auth">
+  <div class="auth-box">
+    <div class="auth-logo">Post<em>Pilot</em></div>
+    <div class="auth-sub" data-i18n="auth.sub">AI LinkedIn Posts Manager</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="tab-login" onclick="switchAuthTab('login')" data-i18n="auth.tab.login">Log In</button>
+      <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')" data-i18n="auth.tab.register">Register</button>
+    </div>
+
+    <div id="auth-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="danil@example.com"></div>
+      <div class="field"><label data-i18n="auth.label.password">Password</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+      <button class="btn-submit" onclick="doLogin()" data-i18n="auth.btn.login">Log In →</button>
+      <div class="auth-divider" data-i18n="auth.divider">or</div>
+      <button class="btn-ghost-sm" style="width:100%;padding:10px" onclick="demoLogin()" data-i18n="auth.demo">🚀 Quick demo login (no password)</button>
+    </div>
+
+    <div id="auth-register" style="display:none">
+      <div class="field"><label data-i18n="auth.label.name">Name</label><input id="reg-name" placeholder="Danil"></div>
+      <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="danil@example.com"></div>
+      <div class="field"><label data-i18n="auth.label.password">Password</label><input type="password" id="reg-pass" placeholder="••••••••"></div>
+      <button class="btn-submit" onclick="doRegister()" data-i18n="auth.btn.register">Register →</button>
+    </div>
+
+    <div class="auth-back" onclick="showView('v-landing')" data-i18n="auth.back">← Back to homepage</div>
+  </div>
+</div>
+
+<!-- ══════════════════ ONBOARDING ══════════════════ -->
+<div class="view" id="v-onboard">
+  <div class="onboard-wrap">
+    <div class="onboard-header">
+      <h2 data-i18n="ob.title">Let's set up your profile</h2>
+      <p data-i18n="ob.sub">3 minutes — and the system writes in your style, not generic AI</p>
+    </div>
+
+    <div class="progress-steps">
+      <div class="prog-step active" id="ps-1"><div class="prog-dot active" id="pd-1">1</div><div class="prog-label" data-i18n="ob.step1.label">About you</div></div>
+      <div class="prog-step" id="ps-2"><div class="prog-dot" id="pd-2">2</div><div class="prog-label" data-i18n="ob.step2.label">Projects</div></div>
+      <div class="prog-step" id="ps-3"><div class="prog-dot" id="pd-3">3</div><div class="prog-label" data-i18n="ob.step3.label">Style</div></div>
+      <div class="prog-step" id="ps-4"><div class="prog-dot" id="pd-4">4</div><div class="prog-label" data-i18n="ob.step4.label">LinkedIn</div></div>
+    </div>
+
+    <div class="onboard-card">
+      <!-- Step 1: About -->
+      <div class="onboard-step active" id="os-1">
+        <div class="step-title">Хто ти і чим займаєшся?</div>
+        <div class="step-desc">Це основа для всіх постів — Claude буде писати від твого імені, тому важливо розуміти контекст.</div>
+        <div class="frow-2">
+          <div class="frow"><label>Ім'я</label><input id="ob-name" placeholder="Danil Gorbunov"></div>
+          <div class="frow"><label>Посада / роль</label><input id="ob-role" placeholder="Product Designer + AI Builder"></div>
+        </div>
+        <div class="frow"><label>Місто / країна</label><input id="ob-location" placeholder="Братислава, Словаччина"></div>
+        <div class="frow"><label>Коротко про тебе (2-3 речення)</label><textarea id="ob-bio" placeholder="Product Designer і solo-builder. Будую AI-продукти самостійно — від дизайну до деплою. Зараз: Fonitix (SaaS для ресторанів), vocab-app, AI Lab."></textarea></div>
+        <div class="frow"><label>Ключові досягнення або факти</label><input id="ob-facts" placeholder="Перший клієнт за 6 днів, 1.7M токенів за 4 дні, solo SaaS..."></div>
+      </div>
+
+      <!-- Step 2: Projects -->
+      <div class="onboard-step" id="os-2">
+        <div class="step-title">Твої проекти і стек</div>
+        <div class="step-desc">Що ти будуєш? Чим більше деталей — тим конкретніші і цікавіші пости.</div>
+        <div class="frow"><label>Поточні проекти (назва, що робить, стек)</label><textarea id="ob-projects" placeholder="Fonitix — AI-агент для ресторанів, відповідає на дзвінки 24/7. Стек: Next.js, Supabase, GPT-4o, Telnyx, Deepgram, Stripe.&#10;vocab-app — вивчення мов через SM-2 алгоритм. Стек: Next.js, localStorage.&#10;AI Lab — локальне середовище для Claude Code."></textarea></div>
+        <div class="frow"><label>Улюблені інструменти / стек</label><input id="ob-stack" placeholder="Claude Code, Cursor, Next.js, Supabase, Vercel, Figma"></div>
+        <div class="frow"><label>Аудиторія твоїх постів</label><input id="ob-audience" placeholder="Product designers, AI builders, solo founders, дизайнери-ентузіасти"></div>
+        <div class="frow"><label>Теми які тебе цікавлять</label>
+          <div class="topic-grid">
+            <div class="topic-item" onclick="toggleTopic(this)">AI інструменти</div>
+            <div class="topic-item" onclick="toggleTopic(this)">Product Design</div>
+            <div class="topic-item" onclick="toggleTopic(this)">SaaS / Startup</div>
+            <div class="topic-item" onclick="toggleTopic(this)">Claude Code</div>
+            <div class="topic-item" onclick="toggleTopic(this)">UX та дослідження</div>
+            <div class="topic-item" onclick="toggleTopic(this)">Design Systems</div>
+            <div class="topic-item" onclick="toggleTopic(this)">Технічна архітектура</div>
+            <div class="topic-item" onclick="toggleTopic(this)">Solo building</div>
+            <div class="topic-item" onclick="toggleTopic(this)">Продуктивність</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Style -->
+      <div class="onboard-step" id="os-3">
+        <div class="step-title">Стиль і тон постів</div>
+        <div class="step-desc">Як ти хочеш звучати? Це визначить характер всіх постів.</div>
+        <div class="frow"><label>Основний тон</label>
+          <div class="tone-chips">
+            <button class="tone-chip" onclick="toggleTone(this,'professional')">Професійний</button>
+            <button class="tone-chip on" onclick="toggleTone(this,'friendly')">Дружній</button>
+            <button class="tone-chip" onclick="toggleTone(this,'expert')">Експертний</button>
+            <button class="tone-chip" onclick="toggleTone(this,'storyteller')">Сторітеллер</button>
+            <button class="tone-chip" onclick="toggleTone(this,'provocative')">Провокаційний</button>
+          </div>
+        </div>
+        <div class="frow"><label>Мова постів</label>
+          <div class="tone-chips">
+            <button class="tone-chip on" onclick="toggleLang(this,'uk')">🇺🇦 Українська</button>
+            <button class="tone-chip" onclick="toggleLang(this,'en')">🇬🇧 English</button>
+          </div>
+        </div>
+        <div class="frow"><label>Довжина яку ти надаєш перевагу</label>
+          <select id="ob-length">
+            <option value="mix">Мікс — короткі і довгі</option>
+            <option value="short">Переважно короткі (до 400 симв)</option>
+            <option value="long">Переважно довгі (600-1000 симв)</option>
+          </select>
+        </div>
+        <div class="frow"><label>Що ти ніколи не пишеш у постах</label><input id="ob-avoid" placeholder="хайп без фактів, motivational quotes, clickbait заголовки..."></div>
+        <div class="frow"><label>Приклад поста в твоєму стилі (якщо є)</label><textarea id="ob-example" placeholder="Вставте будь-який свій старий пост — і система навчиться вашому стилю ще точніше"></textarea></div>
+      </div>
+
+      <!-- Step 4: LinkedIn + API -->
+      <div class="onboard-step" id="os-4">
+        <div class="step-title">LinkedIn і налаштування</div>
+        <div class="step-desc">Останній крок. LinkedIn URL для персоналізації, API key для AI генерації.</div>
+        <div class="frow"><label>LinkedIn URL</label><input id="ob-linkedin" placeholder="https://linkedin.com/in/danilgorbunov"></div>
+        <div class="frow"><label>Сайт або портфоліо</label><input id="ob-site" placeholder="https://danilgorbunov.com"></div>
+        <div class="frow"><label>Anthropic API Key <span style="color:var(--ok)">*обов'язково для AI</span></label><input type="password" id="ob-apikey" placeholder="sk-ant-...">
+          <div class="frow-hint">Потрібен для генерації постів і новин. Безкоштовний tier: console.anthropic.com</div>
+        </div>
+        <div class="frow"><label>LinkedIn Access Token (опційно)</label><input type="password" id="ob-litoken" placeholder="Залиш порожнім — пости копіюватимуться в буфер">
+          <div class="frow-hint">Для прямої публікації без копіювання. developer.linkedin.com → Create App</div>
+        </div>
+      </div>
+
+      <div class="onboard-nav">
+        <button class="btn-back" id="ob-back-btn" onclick="obBack()" style="visibility:hidden">← Назад</button>
+        <span style="font-size:10px;color:var(--t3)" id="ob-step-indicator">Крок 1 з 4</span>
+        <button class="btn-next" id="ob-next-btn" onclick="obNext()">Далі →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ APP DASHBOARD ══════════════════ -->
+<div class="view" id="v-app">
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <div>
+          <div class="brand-logo">Post<em>Pilot</em></div>
+          <div class="brand-user" id="sb-user-name">Завантаження...</div>
+        </div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section-lbl">Контент</div>
+        <div class="nav-item on" onclick="switchTab('posts',this)"><span class="ni">✦</span> Всі пости <span class="nav-badge" id="nb-posts">50</span></div>
+        <div class="nav-item" onclick="switchTab('scheduled',this)"><span class="ni">📅</span> Заплановані <span class="nav-badge" id="nb-sch" style="background:var(--warn)">0</span></div>
+        <div class="nav-item" onclick="switchTab('news',this)"><span class="ni">📰</span> З новин <span class="nav-badge" id="nb-news" style="background:var(--ok)">0</span></div>
+        <div class="nav-item" onclick="switchTab('deleted',this)"><span class="ni">🗑</span> Видалені <span class="nav-badge" id="nb-del" style="background:var(--s3);color:var(--t3)">0</span></div>
+        <div class="nav-section-lbl" style="margin-top:12px">Аккаунт</div>
+        <div class="nav-item" onclick="switchTab('settings',this)"><span class="ni">⚙</span> Налаштування</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-profile">
+          <div class="sp-av" id="sp-av">D</div>
+          <div><div class="sp-name" id="sp-name">Danil</div><div class="sp-email" id="sp-email">...</div></div>
+          <div class="sp-logout" onclick="doLogout()" title="Вийти">↗</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-area">
+      <div class="app-topbar">
+        <div class="app-topbar-title" id="topbar-title">Всі пости</div>
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="search-input" id="app-search" placeholder="пошук..." oninput="renderPosts()">
+        </div>
+        <div class="topbar-right">
+          <div class="tb-pill" id="api-pill" style="border-color:var(--t3);color:var(--t3)">no key</div>
+          <div class="tb-pill dim" id="li-pill">no li</div>
+        </div>
+      </div>
+
+      <!-- filters (posts tab only) -->
+      <div class="filter-bar" id="filter-bar">
+        <span class="flbl">тон</span>
+        <button class="chip on" data-t="all" onclick="filt('all',this)">Всі</button>
+        <button class="chip" data-t="builder" onclick="filt('builder',this)">Builder</button>
+        <button class="chip" data-t="insight" onclick="filt('insight',this)">Insight</button>
+        <button class="chip" data-t="numbers" onclick="filt('numbers',this)">Numbers</button>
+        <button class="chip" data-t="question" onclick="filt('question',this)">Question</button>
+        <button class="chip" data-t="story" onclick="filt('story',this)">Story</button>
+        <div class="fsep"></div>
+        <button class="chip-news" onclick="showTodayPanel()">✦ Пост на сьогодні</button>
+      </div>
+
+      <div class="scroll-area">
+        <!-- Today panel -->
+        <div class="today-panel" id="today-panel" style="display:none">
+          <div class="today-head" onclick="toggleToday()">
+            <div class="today-pulse"></div>
+            <span class="today-lbl">Пост на сьогодні</span>
+            <span class="today-date" id="today-date"></span>
+            <span class="today-caret open" id="today-caret">▾</span>
+          </div>
+          <div class="today-body open" id="today-body">
+            <div class="today-post-text" id="today-text"></div>
+            <div class="today-meta" id="today-meta"></div>
+            <div class="today-actions">
+              <button class="btn-pub-today" onclick="publishToday()">Копіювати → LinkedIn</button>
+              <button class="btn-skip-today" onclick="skipToday()">Інший варіант</button>
+              <button class="btn-close-today" onclick="document.getElementById('today-panel').style.display='none'">Закрити</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- POSTS TAB -->
+        <div class="tab-panel active" id="panel-posts">
+          <div class="posts-grid" id="posts-grid"></div>
+        </div>
+
+        <!-- SCHEDULED TAB -->
+        <div class="tab-panel" id="panel-scheduled">
+          <div class="sch-wrap" id="sch-wrap"></div>
+        </div>
+
+        <!-- NEWS TAB -->
+        <div class="tab-panel" id="panel-news">
+          <div class="news-header-row">
+            <div class="news-header-title">Пости з новин</div>
+          </div>
+          <div class="topic-btns">
+            <button class="topic-btn-item" onclick="genNews('ai')" id="tnb-ai">🤖 AI та LLM</button>
+            <button class="topic-btn-item" onclick="genNews('design')" id="tnb-design">🎨 Product Design</button>
+            <button class="topic-btn-item" onclick="genNews('tech')" id="tnb-tech">💻 Технології</button>
+            <button class="topic-btn-item" onclick="genNews('saas')" id="tnb-saas">🚀 SaaS & Startup</button>
+            <button class="topic-btn-item" onclick="genNews('all')" id="tnb-all">⚡ Все одразу</button>
+          </div>
+          <div class="news-grid" id="news-grid">
+            <div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">📰</span>Обери тему вище — Claude знайде свіжі новини і напише пости від твого імені</div>
+          </div>
+        </div>
+
+        <!-- DELETED TAB -->
+        <div class="tab-panel" id="panel-deleted">
+          <div class="del-grid" id="del-grid"></div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div class="tab-panel" id="panel-settings">
+          <div class="settings-wrap">
+            <div class="settings-section">
+              <div class="settings-section-title">👤 Профіль</div>
+              <div class="frow"><label>Ім'я</label><input id="s-name" placeholder="Danil Gorbunov"></div>
+              <div class="frow"><label>Роль</label><input id="s-role" placeholder="Product Designer + AI Builder"></div>
+              <div class="frow"><label>Місто</label><input id="s-location" placeholder="Братислава, Словаччина"></div>
+              <div class="frow"><label>Про тебе</label><textarea id="s-bio"></textarea></div>
+              <div class="frow"><label>Проекти</label><textarea id="s-projects"></textarea></div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">🎨 Стиль постів</div>
+              <div class="frow"><label>Чого уникати</label><input id="s-avoid"></div>
+              <div class="frow"><label>Приклад твого стилю</label><textarea id="s-example"></textarea></div>
+              <div class="frow"><label>Стек і інструменти</label><input id="s-stack"></div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">🔑 API та інтеграції</div>
+              <div class="frow"><label>Anthropic API Key</label><input type="password" id="s-apikey" placeholder="sk-ant-..." oninput="onApiKeyChange()"></div>
+              <div class="frow"><label>LinkedIn URL</label><input id="s-linkedin"></div>
+              <div class="frow"><label>LinkedIn Access Token</label><input type="password" id="s-litoken"></div>
+              <div class="frow"><label>Сайт</label><input id="s-site"></div>
+            </div>
+            <button class="btn-save-settings" onclick="saveSettings()">Зберегти налаштування</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── POSTS DATA ────────────────────────────────────────────────────────────────
+const P=[
+
+// ── BUILDER ──────────────────────────────────────────────────────────────────
+{t:'builder',a:'Claude Design — Figma має нервово',x:`Окей, ця новина мені зламала мозок трохи.
+
+Anthropic щойно запустив Claude Design. Ти описуєш що хочеш — він будує інтерактивний прототип. З шарами, компонентами, станами. Потім одним кліком передає до Claude Code — і він пише production код.
+
+Весь ланцюжок: ідея → прототип → код — без Figma.
+
+Це не концепт. Це research preview який вже доступний платним юзерам Claude.
+
+Що цікаво: коли Figma і Anthropic ще були партнерами (лютий 2026), вони запустили "Code to Canvas" — Claude Code генерує код → Figma перетворює в дизайн. Взаємовигідна штука.
+
+А потім в квітні CPO Anthropic тихенько вийшов з board Figma. Через два тижні — Claude Design. Ох.
+
+Я спробував. Для простих лендингів і форм — реально швидко. Для складної design system з токенами — ще сиро.
+
+Але напрям зрозумілий: AI замикає loop від опису до живого продукту.
+
+💡 Де спробувати: claude.ai → вибери Claude Design в меню (доступно для Pro планів). Спробуй описати будь-який екран і подивись результат.
+
+🔗 Детально: venturebeat.com/technology/anthropic-just-launched-claude-design
+
+#ProductDesign #AITools #ClaudeCode #BuildInPublic`},
+
+{t:'builder',a:'Canva AI 2.0 — дизайн через чат',x:`Canva щойно випустив Canva AI 2.0 і чесно кажу — це вже не "той Canva для школярок".
+
+Нова архітектура: описуєш ідею → AI будує дизайн з шарами і компонентами → ти редагуєш деталі. Як Figma але де перший драфт з'являється за 30 секунд.
+
+Є речі які мені сподобались:
+
+Canva Code 2.0 — описуєш інтерактивний компонент → він генерує живий код. Це буквально "Canva + vibe coding" в одному.
+
+Sheets AI — описуєш що потрібно (budget tracker, content calendar) → отримуєш готову таблицю з даними. Як Claude в Excel але всередині Canva.
+
+Brand Intelligence — підключаєш свій бренд → всі нові дизайни автоматично в твоїх кольорах і шрифтах.
+
+Що залишилось слабким: для серйозної UI/UX роботи з design system — Figma і Cursor досі кращі. Canva це швидкість на першому кроці, не глибина.
+
+Але для маркетингу, соціалок, презентацій — 2.0 реально прискорює.
+
+💡 Спробуй: canva.com → Chat з AI → "Зроби landing page для [твій продукт]". Подивись що вийде без єдиного кліку по шаблону.
+
+🔗 canva.com/newsroom/news/canva-create-2026-ai
+
+#ProductDesign #AITools #DesignTools #BuildInPublic`},
+
+{t:'builder',a:'GPT-5.4 керує твоїм компом',x:`GPT-5.4 з'явився у березні 2026 і я досі не можу спокійно про це думати.
+
+Він набрав 75% на тесті OSWorld-V — симуляції реальних комп'ютерних задач. Середній людський результат: 72.4%.
+
+AI тепер краще за середню людину у роботі за комп'ютером.
+
+Що він вміє: відкрити Excel, знайти потрібний рядок, скопіювати в Google Slides, зберегти — самостійно. Без того щоб ти натискав кожен крок.
+
+Для мене як solo-білдера це означає одне: рутинна офісна робота (звіти, таблиці, презентації) — більше не моя проблема.
+
+Але є важливий нюанс який не всі помічають: модель справляється з конкретними задачами. "Переніс дані з А в Б" — легко. "Прийми стратегічне рішення що з цими даними робити" — все ще людина.
+
+AI автоматизує execution. Judgment залишається за тобою.
+
+💡 Спробувати: зайди в ChatGPT → GPT-5.4 Thinking → дай задачу "відкрий [сайт], знайди [інформацію], запиши в таблицю". Подивись як він це робить покроково.
+
+#AITools #ProductDesign #Automation #BuildInPublic`},
+
+{t:'builder',a:'промпт що змінив мою роботу',x:`Один маленький промпт який я тепер вставляю першим у кожний новий Claude Code проект. І він змінює всю динаміку роботи.
+
+Ось він:
+
+---
+Ти Senior Product Engineer на цьому проекті. Контекст: [опис]. Стек: [стек].
+
+Перед кожною реалізацією:
+1. Уточни якщо щось незрозуміло
+2. Запропонуй 2-3 варіанти підходу з trade-offs
+3. Попередь про архітектурні ризики
+
+Після реалізації:
+✅ Що зробив
+⚠️ Можливі проблеми
+🔄 Що б зробив інакше з більшим часом
+---
+
+До цього: Claude виконував задачі і мовчав про проблеми.
+Після: сам каже "тут є N+1 query ризик" або "цей підхід не масштабується при 100+ юзерах".
+
+Різниця між "кодогенератором" і "колегою" — в тому що ти явно дозволяєш думати а не тільки виконувати.
+
+💡 Скопіюй промпт вище і вставляй першим повідомленням у новий Claude Code проект. Різниця відчутна з першої складної задачі.
+
+#ClaudeCode #AITools #ProductDesign #BuildInPublic`},
+
+{t:'builder',a:'Fonitix — від ідеї до клієнта',x:`Ось коротка версія як я побудував голосовий AI для ресторанів — щоб ти міг вкрасти будь-яку частину процесу 😄
+
+Крок 1 — порахував математику ДО того як відкрив Figma:
+Пропущений дзвінок у п'ятницю ввечері = ~$50 втрачена резервація. За місяць — до $10,000. Рішення: $249/міс. Клієнт погоджується без презентацій.
+
+Крок 2 — архітектура через Claude (не код — спочатку думка):
+"Я будую голосовий агент для ресторанів. Запропонуй архітектуру з мінімальною латентністю. Не пиши код — давай спочатку обговоримо."
+
+Крок 3 — вибір стеку за UX-метрикою:
+Deepgram (STT) замість Whisper — не через ціну, а через латентність. Deepgram: 80-120мс. Whisper: 800мс+. При > 1.5 сек паузи людина думає що зв'язок обірвався.
+
+Крок 4 — транзакційний онбординг:
+4 API у одній транзакції. Якщо щось падає — rollback. Ніяких "напів-зареєстрованих" клієнтів.
+
+Результат: 312 дзвінків за перший місяць, 940мс середня латентність, один клієнт платить $249.
+
+💡 Найцінніша частина цього процесу — Крок 1. Порахуй вартість проблеми перш ніж рахувати вартість рішення.
+
+#ProductDesign #SaaS #AITools #BuildInPublic`},
+
+{t:'builder',a:'CLAUDE.md — файл який я роблю першим',x:`Є файл який я тепер створюю ДО першого рядка коду. Більшість людей про нього не знають — хоча він офіційно задокументований.
+
+CLAUDE.md — інструкції для Claude Code про те як працювати в цьому проекті.
+
+Ось мій шаблон:
+
+---
+# Правила проекту [Назва]
+
+## Стек
+- Next.js 14, Supabase, TypeScript, Vercel
+
+## Код
+- Server components по дефолту
+- RLS на кожній таблиці з першого дня
+- Ніяких TODO без issue номера
+
+## Кінець кожної сесії
+Запиши в daily-log.md:
+- Що зробили (конкретно, не абстрактно)
+- Чому прийняли це рішення а не інше
+- Що залишилось відкритим
+- Будь-що несподіване
+---
+
+Що змінює цей файл:
+→ Claude з першого повідомлення "в контексті" без пояснень
+→ daily-log.md пишеться автоматично після кожної сесії
+→ Наступного ранку 3 хвилини щоб відновити контекст замість 30
+
+💡 Створи CLAUDE.md у своєму проекті прямо зараз. Навіть 5 рядків кращі за нічого. Офіційна документація: docs.anthropic.com/claude-code
+
+#ClaudeCode #AITools #BuildInPublic #ProductDesign`},
+
+{t:'builder',a:'8 агентів і кава — реально',x:`"Запустив 8 агентів і пішов варити каву" — це не метафора. Ось що реально відбулось.
+
+Задача: оновити token mapping для 40+ компонентів дизайн-системи. Вручну: 20+ годин.
+
+Але секрет не в агентах. Секрет у підготовці перед ними.
+
+2 години я робив ось що:
+→ Розбив 40 компонентів на 8 груп де між групами нуль залежностей
+→ Для кожної написав інструкцію з прикладом і edge cases
+→ Зробив спільний read-only файл tokens.csv який всі читають але ніхто не пише
+
+Тільки після цього: запустив → пішов варити каву (5 хвилин) → повернувся.
+
+20 хвилин і 38 з 40 компонентів готові. Двоє переробив — через нечіткі інструкції (мої, не Claude).
+
+4 години 20 хвилин замість 20 годин.
+
+Найважливіший висновок: якість підготовки × незалежність задач = якість результату. Це стосується і AI-агентів, і людей в команді.
+
+💡 Хочеш спробувати: візьми будь-яку задачу яку можна розбити на 3-5 незалежних частин. Напиши окремі інструкції для кожної. Запусти паралельно. Подивись результат.
+
+#ClaudeCode #DesignSystems #AITools #ProductDesign`},
+
+{t:'builder',a:'no-code прототип рятує тижні',x:`Є момент в кожному проекті де я міг заощадити тижень — але не заощадив бо пропустив одну годину.
+
+Tesla VIP Trip. П'ятниця 17:45: "потрібен сайт до понеділка."
+
+Субота: я зробив no-code прототип (Webflow) замість одразу починати кодити. Клієнт клікав живі сторінки 30 хвилин.
+
+Він знайшов: "ціни хочу бачити раніше", "маршрути на головній", "кнопка бронювання всюди".
+
+Це 3 структурні правки. На прототипі — 45 хвилин. Після двох днів коду — мінімум 6 годин переробок.
+
+Потім: Cursor + Claude → весь фронтенд за 2 дні. Деплой на Vercel понеділок 09:00.
+
+Загалом: 19 годин реальної роботи. З підрядником: 3-4 тижні.
+
+Але найважливіше: прототип коштував мені 1 день і зекономив мінімум 6 годин переробок. ROI: очевидний.
+
+💡 Правило: завжди роби клікабельний прототип перед кодом якщо є клієнт. Люди знаходять проблеми тільки коли клікають — не коли дивляться на статичний макет.
+
+Стек для швидкого прототипу: Framer (лендинги), Bubble (логіка), Figma + prototype mode (UX flows).
+
+#ProductDesign #BuildInPublic #AITools #DesignEngineering`},
+
+{t:'builder',a:'Xproid — коли чат краще за форму',x:`Ось цікавий факт про поведінку людей у e-commerce:
+
+Baymard Institute виміряли 70% cart abandonment. Причина #1: "занадто складний або довгий процес".
+
+7-9 кроків від "хочу купити" до "підтверджено" — норма для класичного магазину. Кожен додатковий крок: ще ~10-15% втрачених покупців.
+
+Xproid вирішує це просто: замовляєш одним повідомленням у чаті.
+
+"Хочу 2 кг курячої грудки і молоко 2.5%" → AI знаходить товари → уточнює якщо треба → підтверджує. 60 секунд замість 7 кроків.
+
+Технічна складність: disambiguate "молоко" серед 15 SKU. AI повинен або вибрати найімовірніший або задати одне точне питання — не п'ять.
+
+Але є важлива умова: conversational checkout працює тільки для конкретного наміру. "Хочу молоко" → добре. "Покажи мені що є цікавого" → потрібен каталог.
+
+💡 Тест для свого продукту: попроси 5 людей описати словами що вони хочуть зробити. Якщо відповіді конкретні — conversational підхід варто спробувати.
+
+🔗 Дані: baymard.com/lists/cart-abandonment-rate
+
+#ProductDesign #UX #ECommerce #AITools`},
+
+{t:'builder',a:'транзакція яка врятувала онбординг',x:`Розкажу про технічне рішення яке я вважав "надлишковим" — і яке спрацювало 4 рази за перший місяць.
+
+Fonitix onboarding: 4 кроки через різні API (Supabase, Telnyx, Stripe, налаштування агента).
+
+Без транзакційної логіки: якщо Telnyx падає на кроці 2 — акаунт є, номера немає, оплата не налаштована. Клієнт не може ні використати, ні видалити нормально.
+
+З транзакцією: будь-яка помилка → автоматичний rollback → чистий стан → "спробуйте ще раз".
+
+За перший місяць Telnyx давав timeout 4 рази. Кожного разу: клієнт бачив помилку → пробував через 3 хвилини → успішно. Нуль "зламаних" акаунтів. Нуль ручного виправлення.
+
+Простими словами: транзакція = або все або нічого. Немає "наполовину готово".
+
+Як це реалізовано в Supabase: database functions + BEGIN/COMMIT/ROLLBACK. Один раз написав — захищено назавжди.
+
+💡 Питання для будь-якого multi-step flow: "якщо тут впаде — система залишається в консистентному стані?" Якщо ні — потрібна транзакція або rollback логіка.
+
+🔗 Патерн: supabase.com/docs/guides/database/functions
+
+#ProductDesign #SaaS #DesignEngineering #BuildInPublic`},
+
+{t:'builder',a:'vocab-app — SM-2 за вечір',x:`Субота 21:00, вирішив зробити застосунок для вивчення мов. До 23:30 — задеплоїв.
+
+Ось весь процес та що я навчився з нього.
+
+Перший промпт до Claude Code:
+"Побудуй flashcard застосунок для вивчення мов. Користувач — людина яка вчить 10 хвилин на день і не хоче забувати продовжувати. SM-2 алгоритм. Нуль бекенду для MVP."
+
+Ключове слово: "не хоче забувати продовжувати". Це контекст про поведінку, не технічна вимога.
+
+Через 12 хвилин Claude повернув SM-2 + streak counter + flip анімація + прогрес сесії. Я просив тільки перше.
+
+Чому? Він прочитав "не хоче забувати продовжувати" і сам вирішив що потрібні механізми утримання.
+
+Урок: описуй поведінку яку хочеш викликати в користувача — а не функцію яку хочеш реалізувати.
+
+SM-2 до речі — це той алгоритм що лежить в основі Anki і Duolingo. Ідея проста: показуй матеріал в момент коли починаєш забувати. Інтервали: 1 день → 3 → 7 → 16 → 35 → 90...
+
+💡 Anki безкоштовний і використовує цей алгоритм: apps.ankiweb.net. Якщо хочеш реалізувати сам — SM-2 це ~30 рядків JS, попроси Claude.
+
+#ClaudeCode #BuildInPublic #ProductDesign #AITools`},
+
+// ── INSIGHT ───────────────────────────────────────────────────────────────────
+{t:'insight',a:'Adobe Firefly тепер агент',x:`Adobe зробив щось що я не очікував від них.
+
+Firefly AI Assistant — тепер агент. Описуєш що хочеш → він сам викликає Photoshop, Premiere, Lightroom, Illustrator і робить роботу за тебе.
+
+Фраза "Create a multi-channel campaign" → він генерує варіанти для Instagram, LinkedIn, email, банерів — одночасно. З твоїм brand kit.
+
+І ось що мені здається справді важливим: Adobe інтегрував Claude (Anthropic) як один з доступних моделей всередині Firefly. Тобто ти можеш вибирати між Adobe's model, Claude, Google, Runway, Kling — в одному інтерфейсі.
+
+Це як App Store але для AI моделей в дизайні.
+
+Для мене як практика це означає: більше не треба перемикатись між інструментами. Один контекст — різні моделі для різних задач.
+
+Що ще цікаво: Kling 3.0 тепер в Firefly. Відео з AI яке реально виглядає добре — вже не гіперлупа "скоро буде".
+
+💡 Якщо використовуєш Creative Cloud: оновись і спробуй Firefly AI Assistant. Особливо якщо робиш маркетинговий контент — генерація в кількох форматах одночасно реально економить час.
+
+🔗 news.adobe.com/news/2026/04/adobe-new-creative-agent
+
+#AITools #ProductDesign #DesignTools #ContentCreation`},
+
+{t:'insight',a:'GPT-5.5 вийшов — що він вміє',x:`GPT-5.5 вийшов два тижні після 5.4. Темп ітерацій зараз — моделі виходять як iOS оновлення.
+
+Що реально нового:
+
+Він розуміє "брудні" завдання. Раніше: дай нечіткий запит → отримай нечіткий результат. Тепер: "зроби щось з цими даними" → він сам розбирається що саме треба зробити і робить.
+
+Менше токенів на ту саму задачу — в кодінгу особливо помітно.
+
+Designed to "keep going" — якщо задача складається з 10 кроків, він проходить всі 10 без того щоб ти підштовхував на кожному.
+
+Але є момент якому я приділяю увагу: GPT-5.5 класифікований OpenAI як "High risk" по cybersecurity — може "підсилити існуючі загрози". Anthropic обмежив rollout свого Mythos Preview з тієї ж причини.
+
+Тобто модель потужніша — і небезпечніша при зловживанні. Це не привід не використовувати, але привід розуміти з чим маєш справу.
+
+💡 Практично для тебе: якщо використовуєш ChatGPT Plus — 5.5 вже доступний. Спробуй дати multi-step задачу без деталізації кожного кроку. Порівняй результат з 5.2.
+
+🔗 techstartups.com/2026/04/23/openai-launches-gpt-5-5
+
+#AITools #ProductDesign #AI #BuildInPublic`},
+
+{t:'insight',a:'контекст = якість результату',x:`Є залежність яку я відкрив через болісний досвід переробок.
+
+Якість відповіді AI = f(якість контексту який ти дав).
+
+Це очевидно. Але більшість промптів виглядають так: "зроби X". Без мети. Без аудиторії. Без обмежень.
+
+Три рівні того ж самого запиту:
+
+Рівень 1: "Зроби flashcard систему"
+→ Отримуєш: алгоритм і все.
+
+Рівень 2: "Зроби flashcard для вивчення мов, SM-2 алгоритм, localStorage"
+→ Отримуєш: те що просив.
+
+Рівень 3: "Зроби flashcard для людини яка вчить мову по 10 хв/день і хоче не пропускати. SM-2. Нуль бекенду."
+→ Отримуєш: алгоритм + streak + прогрес + анімація — і Claude пояснює чому додав кожну.
+
+Різниця рівня 1 і 3 — 3 хвилини на формулювання. Різниця результату — радикальна.
+
+💡 Шаблон який я використовую:
+"[Задача] для [хто це буде використовувати].
+Вони хочуть [кінцева мета].
+Контекст використання: [коли і як].
+Обмеження: [що не можна або не варто].
+Пріоритет: [що найважливіше]."
+
+Збережи — і використовуй для кожного серйозного запиту.
+
+#ClaudeCode #AITools #ProductDesign #UX`},
+
+{t:'insight',a:'Figma не вмирає — змінює роль',x:`Після запуску Claude Design всі почали писати "Figma вмирає" — і я хочу дати нюанс.
+
+Figma змінює роль. Це не те саме що вмирати.
+
+Стара роль Figma: міст між дизайнером і розробником. Специфікація.
+
+Нова роль Figma: shared language для команди, design system з токенами, документація рішень.
+
+Якщо ти solo і деплоїш сам — Claude Design або Claude Code → браузер часто швидше. Міст не потрібен.
+
+Але якщо є команда або довгий lifecycle продукту — Figma ще важливіший ніж раніше. Бо без нього команда спілкується через "ну я думав що...", а не через спільне джерело правди.
+
+Цікавий момент: Figma запустили "Code to Canvas" в лютому — Claude Code генерує код → Figma перетворює в дизайн. Вони йшли назустріч AI, а не проти.
+
+Anthropic відповів Claude Design. Тепер обидві компанії будують в один бік але конкурують за шматок того самого пирога.
+
+💡 Моя порада: не питай "Figma або Claude Code". Питай "де в моєму процесі є bottleneck і що його прибирає?" Відповідь різна для різних команд.
+
+#ProductDesign #Figma #AITools #DesignEngineering`},
+
+{t:'insight',a:'1 секунда — все що вирішує',x:`Є одна цифра яку я пам'ятаю постійно при проектуванні будь-чого interactive.
+
+100 мілісекунд.
+
+NNGroup виміряли: до 100мс — відчуття "миттєво". До 1 секунди — "нормально". Після 10 — "зламано".
+
+Для голосового AI (Fonitix) поріг ще жорсткіший. Я провів реальний тест: попросив 10 людей телефонувати і сказав "скажіть коли відчуєте що щось не так".
+
+Пауза до 800мс: ніхто нічого не помітив.
+Пауза 1.5-2 сек: "алло?" або "відбій".
+
+Тому ціль Fonitix: < 1.2 сек від слова клієнта до початку відповіді.
+
+Ця одна UX-вимога визначила весь технічний стек: Deepgram замість Whisper (80мс vs 800мс), streaming TTS замість batch, GPT-4o mini замість 4o (швидкість vs якість).
+
+Стек — це відповідь на UX-вимоги. Не навпаки.
+
+💡 Для свого продукту: знайди один moment of truth де затримка руйнує довіру. Встанови конкретну цільову метрику в мілісекундах. Потім вибирай стек під неї.
+
+🔗 NNGroup: nngroup.com/articles/response-times-3-important-limits
+
+#UX #ProductDesign #SaaS #AITools`},
+
+{t:'insight',a:'RLS — охоронець в базі даних',x:`Розкажу про концепцію яку я вважаю одним з найелегантніших рішень в розробці — і яку більшість дизайнерів ніколи не чули про неї.
+
+Row Level Security. Охоронець не в коді — а прямо в базі даних.
+
+Проста аналогія: ресторан, 100 офіціантів. Кожен бачить тільки свої столики.
+
+Підхід 1 (код): кожен запит перевіряє "хто ти і до яких столиків маєш доступ?" Якщо в одному місці забули перевірку — офіціант бачить чужі столики.
+
+Підхід 2 (RLS): правило написане один раз в базі. "Офіціант бачить тільки свої столики — завжди, для будь-якого запиту, автоматично."
+
+Для Fonitix: якщо я забуду WHERE restaurant_id = $current в якомусь endpoint — RLS все одно заблокує доступ до чужих даних. Архітектурно неможливо "забути".
+
+Реальна ситуація: я забув clause в одному endpoint. Клієнт отримав порожній результат — не чужі дані. База захистила де код підвів.
+
+💡 Якщо будуєш на Supabase: вмикай RLS з першого рядка коду на КОЖНІЙ таблиці. Додати пізніше набагато важче. Детально: supabase.com/docs/guides/auth/row-level-security
+
+#SaaS #ProductDesign #DesignEngineering #Supabase`},
+
+{t:'insight',a:'Anthropic $30B — що це означає',x:`Є новина про Anthropic яка мало обговорюється серед дизайнерів — але вона важлива для розуміння куди рухається ринок.
+
+У березні 2026 Anthropic перетнув $30B annualized revenue. У лютому було $20B. Зростання за місяць — $10B ARR.
+
+OpenAI: $25B+. Конкуренти йдуть плечем до плеча.
+
+Що це означає практично: ці компанії більше не стартапи де "може закриються завтра". Це нова Microsoft і Google — тільки замість операційних систем і пошуку вони продають intelligence.
+
+Для мене як solo-білдера: інструменти на яких я будую (Claude Code, Cursor + Claude) — будуть розвиватись і підтримуватись. Це зменшує технічний ризик.
+
+Але є інший ризик: коли компанія зростає до таких розмірів — ціни можуть рости, API можуть мінятись, пріоритети можуть зміщуватись.
+
+Висновок: будуй на AI як на infrastructure — але не залежай від одного провайдера. Anthropic сьогодні, може OpenAI або Google завтра.
+
+💡 Практично: використовуй AI через unified API (наприклад Vercel AI SDK або LiteLLM) — тоді зміна провайдера це зміна однієї строки, а не рефакторинг всього коду.
+
+#AITools #ProductDesign #SaaS #BuildInPublic`},
+
+{t:'insight',a:'no-code — це не "для тих хто не вміє"',x:`Є міф про no-code який я хочу знищити бо він коштує людям купу переробок.
+
+"No-code — для тих хто не вміє кодити."
+
+Неправда. No-code — для швидкої верифікації гіпотез ДО інвестицій у код.
+
+Реальна різниця яку я відчув на Tesla VIP Trip:
+
+До прототипу: я думав що розумію що потрібно.
+Після прототипу: клієнт клікав 30 хвилин і знайшов 3 проблеми яких я не бачив.
+
+Ці проблеми на прототипі: 45 хвилин правок.
+Ті самі проблеми після 2 днів коду: мінімум 6 годин.
+
+Прототип = найдешевший спосіб помилитись.
+
+Ще один кут: no-code прототип дає клієнту "клікати" — а не "дивитись на картинки". Люди дуже по-різному реагують на статичний макет і живу взаємодію. Тільки клікаючи вони знаходять реальні проблеми.
+
+💡 Стек для різних задач:
+→ Framer — лендинги і маркетинг
+→ Bubble — складна app-логіка
+→ Webflow — контентні сайти
+→ Figma prototype — user flows і стани
+→ Claude Code — технічні прототипи
+
+#ProductDesign #BuildInPublic #NoCode #AITools`},
+
+{t:'insight',a:'Claude пояснює краще за docs',x:`Відкрив спосіб навчатись архітектурі у 3-4 рази швидше ніж через документацію. І він настільки простий що дивно чому я не робив це з початку.
+
+Замість читати docs — питати Claude "чому" після кожного рішення.
+
+Реальний приклад з Fonitix:
+
+Claude використав PostgreSQL trigger для onboarding provisioning. Я міг просто залишити це і йти далі. Замість цього запитав:
+
+"Поясни чому trigger а не Edge Function. Trade-offs? Коли Edge Function була б кращою?"
+
+Відповідь: trigger виконується в тій самій транзакції — якщо впаде щось далі, все відкочується автоматично. Edge Function — після commit. Якщо вона впаде, є orphaned дані.
+
+Це пояснення я запам'ятав назавжди. Воно прив'язане до реальної задачі, з реальними наслідками.
+
+Docs дають "що і як". Claude дає "чому і коли". Для архітектурного мислення важливіше друге.
+
+💡 Промпт для навчання через Claude:
+"Поясни чому ти обрав [рішення A] а не [B і C]. Які trade-offs? Коли B або C були б кращими? Що може піти не так з A?"
+
+Додавай це після кожного нетривіального рішення.
+
+#ClaudeCode #AITools #ProductDesign #Learning`},
+
+// ── NUMBERS ───────────────────────────────────────────────────────────────────
+{t:'numbers',a:'GPT-5.4 vs людина — числа',x:`OpenAI опублікували число яке мені важко спокійно сприймати.
+
+GPT-5.4 на OSWorld-V (тест реальної роботи за комп'ютером): 75%.
+Середня людина на тому ж тесті: 72.4%.
+
+AI вперше перевершив середню людину в комп'ютерних задачах.
+
+Але контекст важливий: OSWorld-V тестує конкретні, добре-описані задачі ("відкрий Excel, знайди рядок 47, скопіюй значення в Google Slides"). Це не "прийми стратегічне рішення". Це execution.
+
+Ще числа:
+→ Точність GPT-5.4 порівняно з 5.2: на 33% менше фактичних помилок
+→ GDPval benchmark (44 професії): 5.4 перевершує людей у 83% задач
+→ Операційні витрати OpenAI у 2026: $14.1 млрд на inference (обчислення відповідей)
+
+Останнє число — важливе. Чим потужніші моделі, тим дорожча кожна відповідь. IDC прогнозує 1000× ріст попиту на inference до 2027.
+
+Це означає: AI стає дешевшим і дорожчим одночасно — залежно від того який тип задачі.
+
+💡 Практично: для repetitive execution tasks (перенести дані, написати текст за шаблоном, прочитати документ) — AI вже кращий. Для judgment tasks (що будувати, кому продавати, як позиціонувати) — поки ні.
+
+#AITools #ProductDesign #AI #BuildInPublic`},
+
+{t:'numbers',a:'Canva AI 2.0 — що всередині',x:`Canva запустив AI 2.0 і під капотом там кілька цікавих речей про які не всі говорять.
+
+Canva Design Model — перша foundation model побудована спеціально для розуміння дизайн-структур. Не text-to-image, а text-to-layered-design з ієрархією і компонентами.
+
+Числа які озвучив Canva:
+→ Enterprise бізнес: 100% ріст рік до року
+→ Оцінка компанії: $42 млрд (PitchBook)
+→ Нових features в 2.0: 6 (Connectors, Scheduling, Web Research, Brand Intelligence, Sheets AI, Canva Code 2.0)
+
+Що мені здається найцікавішим: Sheets AI. Описуєш що потрібно (budget tracker, project timeline) → отримуєш готову таблицю з даними і форматуванням. Це прямий удар по Excel + ChatGPT combo який я зараз використовую.
+
+Canva Code 2.0: описуєш інтерактивний компонент → він генерує живий responsive код. Тобто Canva тепер починає заходити в зону Cursor і Claude Code — для дизайнерів.
+
+💡 Де спробувати Canva AI 2.0: canva.com → AI Assistant → описуй завдання. Research preview вже доступний.
+
+🔗 canva.com/newsroom/news/canva-create-2026-ai
+
+#AITools #ProductDesign #DesignTools #BuildInPublic`},
+
+{t:'numbers',a:'Fonitix реальна математика',x:`Покажу числа які визначили Fonitix — не для хвастощів, а як шаблон для будь-якого SaaS.
+
+Вартість проблеми для клієнта:
+→ 10 пропущених дзвінків у п'ятницю ввечері × $50 = $500
+→ За місяць: $500 × 20 вечорів = $10,000 потенційних втрат
+
+Собівартість мого рішення за місяць:
+→ Deepgram STT: $13 (при 500 дзвінках по 3 хв)
+→ GPT-4o mini: $8
+→ Google TTS: $32
+→ Telnyx SIP: $15
+→ Разом: $35/міс
+
+Ціна для клієнта: $249/міс
+Gross margin: ($249 - $35) / $249 = 86%
+
+Альтернативи клієнта: оператор $3,000/міс, аутсорс call-center $1,200-1,800/міс.
+
+Клієнт платить $249 щоб зекономити $2,951+. Це sells itself.
+
+Формула яку я використовую перед будь-яким SaaS:
+ROI для клієнта = (вартість проблеми) / (ціна рішення)
+Якщо > 3 — є сенс будувати. Якщо < 1.5 — важко продавати.
+
+💡 Порахуй ROI для свого наступного продукту перш ніж відкривати Figma. 30 хвилин в таблиці — найважливіші 30 хвилин.
+
+#SaaS #ProductDesign #AITools #Startup`},
+
+{t:'numbers',a:'8 агентів — реальні числа',x:`Хочу показати реальну математику паралельних AI-агентів бо більшість постів про це або перебільшують або не дають цифр.
+
+Задача: оновити token mapping для 40 компонентів.
+
+Мій вимір часу на ОДИН компонент вручну:
+→ Аналіз YAML: 5 хв
+→ Оновлення token_map: 10 хв
+→ Apply-скрипт: 15 хв
+→ Тест: 5 хв
+→ Разом: 35 хв/компонент
+
+40 × 35 хв = 23.3 години = майже 3 робочих дні.
+
+З 8 паралельними агентами:
+→ Підготовка (декомпозиція + інструкції): 2 год
+→ Виконання (все паралельно): 20 хв
+→ Ревью: 45 хв
+→ Переробка 2 компонентів: 40 хв (мої нечіткі інструкції)
+→ Разом: 4 год 25 хв
+
+Економія: 18.8 годин.
+
+Але — і це ключово — 2 компоненти потребували переробки. Через МОЇ нечіткі інструкції, не через Claude.
+
+Формула яку я вивів: (якість інструкцій) × (незалежність задач) = якість результату. Не (кількість агентів).
+
+💡 Хочеш спробувати паралельних агентів: почни з 2-3, не з 8. Перевір якість інструкцій на малому масштабі — потім масштабуй.
+
+#ClaudeCode #DesignSystems #AITools #ProductDesign`},
+
+{t:'numbers',a:'1.7M токенів — що це означає',x:`1.7 мільйони токенів за 4 дні активної роботи в Claude Code. Давай розберемо що за цим стоїть.
+
+Масштаб: 1 токен ≈ ¾ слова. 1.7M ≈ 1.3M слів. "Гаррі Поттер" — ~77,000 слів. Тобто ~17 романів за 4 дні.
+
+Але цікаво не число — а структура цих токенів.
+
+Поверхнева робота: "зроби X" → отримай X → далі. Мало токенів.
+Глибока робота: архітектурні обговорення + "чому ти обрав це?" + debugging з поясненням + "що може піти не так" + рефакторинг з обґрунтуванням. Багато токенів.
+
+1.7M — це глибока робота над 5 реальними проектами: Fonitix, vocab-app, AI Lab, LinkedIn генератор, дизайн-система.
+
+Важлива деталь: Sonnet 4.6 для 90% задач, не Opus. Чому? Sonnet відповідає за 2-3 сек. Opus — 8-12 сек. При активній розробці пауза 10 сек ламає потік. Краще трохи менше якості але без переривань.
+
+💡 Якщо твої сесії з Claude Claude короткі і ти не питаєш "чому" — ти використовуєш кодогенератор. Якщо довгі і повні "а чому саме так?" — ти використовуєш thought partner.
+
+#ClaudeCode #AITools #BuildInPublic #ProductDesign`},
+
+{t:'numbers',a:'Tesla VIP — реальна хронологія',x:`Покажу точний розклад проекту Tesla VIP Trip бо абстрактне "5 днів" нічого не говорить.
+
+День 1 (4 год):
+→ ТЗ і контент від клієнта (1.5 год)
+→ Sitemap і структура (1 год)
+→ Референси і tone of voice (1.5 год)
+
+День 2 (3 год):
+→ Webflow прототип (2 год)
+→ Синк з клієнтом, feedback (1 год)
+→ Знайдено: 3 структурні проблеми яких не бачив в тексті
+→ Виправлено: 45 хв
+
+День 3 (6 год):
+→ Cursor + Claude — весь фронтенд: компоненти, секції, форма бронювання
+
+День 4 (4 год):
+→ Анімації, адаптив, performance (LCP < 2.5 сек)
+
+День 5 (2 год):
+→ Деплой на Vercel, custom domain через Cloudflare, передача
+
+Загалом: 19 год реальної роботи.
+Стандартний timeline з підрядником: 3-4 тижні, $2,000-5,000.
+
+Різниця: 6× по часу, значна по бюджету.
+
+Але головне: між моїм рішенням і живим продуктом — нуль людей. Нуль передач. Нуль "зіпсованого телефону".
+
+💡 Де шукати час на прискорення: Vercel (деплой за хвилину), Cloudflare (домен і SSL), Cursor + Claude (код без синтаксичних бар'єрів). Ці три прибирають більшість тертя між ідеєю і живим продуктом.
+
+#BuildInPublic #ProductDesign #AITools #DesignEngineering`},
+
+{t:'numbers',a:'SM-2 — математика запам\'ятовування',x:`SM-2 алгоритм: чому Anki і Duolingo ефективніші за звичайне повторення — у числах.
+
+Мозок забуває за кривою Еббінгауза:
+→ Через 20 хвилин після навчання: пам'ятаєш 58%
+→ Через 1 день: 44%
+→ Через 7 днів: 20%
+→ Без повторення: майже нуль
+
+SM-2 вирішує це: показуй матеріал саме в момент "перед забуванням".
+
+Ease Factor (складність) — починається 2.5 для кожної картки:
+→ Відмінна відповідь: EF += 0.1
+→ Нормальна: EF без змін
+→ Важко але правильно: EF -= 0.14
+→ Невірно: EF -= 0.2, інтервал скидається
+
+Наступний інтервал = поточний × EF.
+
+Для "стабільної" картки: 1 день → 3 → 7 → 16 → 35 → 90 → 240 → 600+ днів.
+
+Практичний результат: 10 хвилин на день × 1 рік = пасивне знання ~2,000 слів нової мови.
+
+Я реалізував це у vocab-app за 12 хвилин з Claude Code.
+
+💡 Спробуй SM-2 для будь-якого складного матеріалу: мови, медицина, правники, tech concepts. Anki безкоштовний: apps.ankiweb.net
+
+#ClaudeCode #BuildInPublic #ProductDesign #Learning`},
+
+// ── QUESTION ──────────────────────────────────────────────────────────────────
+{t:'question',a:'Claude Design вбиває Figma?',x:`Після запуску Claude Design в квітні я чекав що всі напишуть "Figma мертва". Написали. Але правда складніша.
+
+Що Claude Design реально вміє зараз:
+→ Описуєш екран → отримуєш прототип з шарами і компонентами
+→ Підключаєш свій codebase → він будує design system автоматично
+→ Готово → одним кліком передаєш до Claude Code → production код
+
+Це дійсно закриває loop "ідея → прототип → код" без Figma. Для solo-проектів і MVP — може бути достатньо.
+
+Що Figma робить краще зараз:
+→ Командна робота і асинхронні обговорення
+→ Складні design system з токенами і взаємозалежними компонентами
+→ Dev Mode і handoff для великих команд
+→ Complex interaction design де важливо бачити всі стани одночасно
+
+Мій висновок: Claude Design не вбиває Figma. Він вбиває "простий Figma" — для тих хто використовував його тільки для quick wireframes і solo проектів.
+
+Для серйозних продуктових команд — Figma ще важливіший тому що стає документацією і спільною мовою.
+
+💡 Спробуй Claude Design для свого наступного personal project: claude.ai → Claude Design. Якщо вистачає — добре. Якщо ні — знатимеш де реально потрібна Figma.
+
+#ProductDesign #Figma #AITools #DesignEngineering`},
+
+{t:'question',a:'AI агент керує твоїм комп — страшно?',x:`GPT-5.4 набрав 75% на тесті де треба реально працювати за комп'ютером. Середня людина: 72.4%.
+
+Один мій знайомий PM одразу сказав: "ну тепер я без роботи". Я з ним не згоден — але розумію звідки це.
+
+Ось як я думаю про це:
+
+GPT-5.4 добре виконує конкретні, добре-описані задачі: "відкрий Excel, знайди значення, скопіюй у презентацію". Це execution.
+
+Що він не вміє: вирішити що взагалі треба зробити, зрозуміти політику компанії, побудувати довіру з клієнтом, відчути що щось "не так" інтуїтивно.
+
+Це judgment.
+
+Мій досвід з Claude Code: він чудово реалізує те що я чітко описую. Але якщо я питаю "а що взагалі варто будувати?" — він дає варіанти, але рішення залишається моїм.
+
+AI автоматизує execution. Judgment — це де людина залишається цінною. І саме в judgment варто вкладати розвиток.
+
+💡 Питання для самоаналізу: скільки твого робочого часу — execution (зробити те що вже вирішено), а скільки — judgment (вирішити що і чому)? Більше judgment → менше ризику від AI.
+
+#AITools #ProductDesign #AI #Future`},
+
+{t:'question',a:'WebSocket чи polling',x:`Є питання яке виникає в кожному продукті де є "живі" дані: WebSocket чи polling?
+
+Це здається технічним питанням. Але насправді це UX і product рішення.
+
+Polling: браузер питає сервер кожні N секунд. Простий. Передбачуваний. Але 1,000 юзерів × кожні 5 сек = 12,000 запитів/хв — постійно, навіть якщо нічого не змінилось.
+
+WebSocket: відкрита двостороння лінія. Сервер надсилає тільки коли є зміни. Ефективно. Але складніша архітектура.
+
+Як я вирішую для кожного конкретного випадку:
+
+"Якщо дані застаріли на 30 секунд — що конкретно піде не так?"
+
+Fonitix кухня: замовлення запізниться → кухня почне пізно → страва приходить пізно. WebSocket.
+
+Аналітика за тиждень: нічого. Cron job раз на годину.
+
+Статус доставки: клієнт побачить чуть пізніше. Polling кожні 30 сек.
+
+💡 Supabase Realtime (WebSocket) — безкоштовний якщо вже використовуєш Supabase. Але не додавай "про запас" — він ускладнює архітектуру. Тільки де затримка = реальна операційна проблема.
+
+🔗 supabase.com/docs/guides/realtime/postgres-changes
+
+#ProductDesign #UX #SaaS #DesignEngineering`},
+
+{t:'question',a:'solo чи команда — коли що',x:`Питання яке я задаю собі на старті кожного проекту: "мені потрібна команда чи можу solo?"
+
+Після MRIACRM і Fonitix у мене є більш чіткі критерії.
+
+Solo + AI працює добре коли:
+→ Goal: validation (перший клієнт, перші $1K MRR)
+→ Узгодженість рішень важливіша за швидкість
+→ Модулі сильно залежать один від одного (важко паралелізувати)
+
+Команда потрібна коли:
+→ Goal: scale (від $10K MRR і далі)
+→ Паралельна робота критична (одночасно дизайн + розробка + маркетинг)
+→ Є зони де потрібна специфічна deep expertise
+
+Чесна відмова: є зони де я зупиняюсь навіть з Claude Code. Security audit production системи, compliance для enterprise, складна distributed інфраструктура — там потрібен спеціаліст. Знати ці зони — частина компетентності.
+
+AI-інструменти не прибрали потребу в команді. Вони підняли поріг "де починається команда" — з validation до scale.
+
+💡 Milestone для solo: перші 3 платних клієнти або $3K MRR. Досяг — є аргумент для наймання. Ні — ще є product-market fit робота яку треба зробити solo.
+
+#ProductDesign #SaaS #AITools #Startup`},
+
+{t:'question',a:'навіщо рахувати до Figma',x:`Є питання яке я тепер задаю на початку кожного продуктового проекту. Воно з'явилось після Fonitix і суттєво змінює результат.
+
+"Скільки клієнт втрачає БЕЗ мого продукту на місяць?"
+
+Якщо відповідь менше ніж ціна рішення — клієнт не купить. Це не маркетинг, це математика.
+
+Для Fonitix я порахував ДО першого wireframe:
+→ 10 пропущених дзвінків × $50 × 20 вечорів = $10,000/міс втрат
+→ Моє рішення: $249/міс
+→ ROI для клієнта: 40×
+
+При такому ROI продукт продає себе без pitch deck.
+
+Ці числа визначили все: ціну ($249 а не $99 і не $999), які фічі першочергові, чому onboarding self-service (при $249 немає бюджету на sales call).
+
+Дизайнер який починає з unit-економіки проектує зовсім інший продукт ніж той хто починає з Figma.
+
+💡 Три питання перед будь-яким проектом:
+1. Скільки коштує проблема для клієнта?
+2. Скільки коштує твоє рішення?
+3. При якій кількості клієнтів це окупається?
+
+Якщо не можеш відповісти на всі три — занадто рано відкривати Figma.
+
+#ProductDesign #SaaS #AITools #Startup`},
+
+{t:'question',a:'AI помиляється — що тоді',x:`Є питання яке відрізняє добрий AI продукт від поганого. І воно не про точність моделі.
+
+"Коли AI помилиться — що відбудеться?"
+
+Не "якщо". "Коли". Бо помилиться завжди.
+
+Для Fonitix агент іноді неправильно чує замовлення. Мій дизайн захисту від цього:
+
+Рівень 1 (в розмові): агент завжди підтверджує замовлення. "Столик на двох, п'ятниця 19:00, вірно?" — клієнт виправляє одразу.
+
+Рівень 2 (операційно): персонал бачить замовлення до виконання — може виправити.
+
+Рівень 3 (аудит): запис кожної розмови зберігається.
+
+Ключовий принцип: AI система не зобов'язана бути ідеальною. Вона зобов'язана бути такою щоб помилки були виправними і не катастрофічними.
+
+Люди прощають помилки якщо є простий вихід. Не прощають коли виходу немає. ChatGPT має "regenerate". Grammarly пояснює кожну правку. GitHub Copilot дає варіанти.
+
+💡 Для свого наступного AI продукту: зроби список "катастрофічних помилок" (не виправно) і "незручних помилок" (виправно). Захищай від перших трьома шарами. Для других — простий escape hatch.
+
+#ProductDesign #UX #AITools #SaaS`},
+
+{t:'question',a:'realtime UI — коли справді треба',x:`"Зробімо realtime" — найчастіша фраза на product синках після "зробімо AI фічу". І так само часто — непотрібна.
+
+Ось мій простий тест:
+
+"Якщо дані застаріли на 30 секунд — що КОНКРЕТНО піде не так?"
+
+Fonitix кухня: замовлення запізниться → страва запізниться → клієнт незадоволений. Realtime потрібен.
+
+3D Warehouse BMW: оператор бачить неправильну позицію → відвантажує не той товар → зупинка виробничої лінії. Realtime потрібен.
+
+Статус замовлення для клієнта: нічого критичного. Polling раз на 30 сек вистачить.
+
+Аналітика продажів за тиждень: абсолютно нічого. Cron job раз на годину — ідеально.
+
+Прагматичне правило: realtime для операційних процесів де затримка = бізнес-проблема. Для решти — polling простіший і достатньо.
+
+Ще деталь: Supabase Realtime майже безкоштовний якщо вже використовуєш Supabase. Але "майже безкоштовний" не означає що треба додавати скрізь — складність архітектури теж має ціну.
+
+💡 Наступного разу коли є бажання додати realtime — спочатку виміряй: "що станеться якщо затримка буде 60 секунд?" Якщо відповідь "нічого страшного" — поклади polling і рухайся далі.
+
+#ProductDesign #UX #DesignEngineering #SaaS`},
+
+// ── STORY ─────────────────────────────────────────────────────────────────────
+{t:'story',a:'коли Claude Design вразив',x:`Взяв Claude Design на тест одразу після запуску. Ось що відбулось.
+
+Написав: "лендинг для SaaS який автоматизує телефонні дзвінки в ресторанах. Аудиторія — власники невеликих ресторанів. Тон: professional but approachable."
+
+Через 40 секунд — прототип. З hero секцією, features, pricing, CTA. Шари і компоненти. Все клікабельне.
+
+Моя реакція: "це ж те саме що я б зробив у Figma за 2 години."
+
+Потім натиснув "передати до Claude Code" і попросив написати production HTML.
+
+Код вийшов. Чистий. Responsive. За 3 хвилини.
+
+Де я зупинився: в design system з custom токенами для існуючого бренду — Claude Design ще сирий. Він не "розуміє" нюанси brand identity так як Figma Variables.
+
+Але для нового проекту де немає brand history? Це реально замінює перший день у Figma.
+
+Висновок: Claude Design — не вбивця Figma. Це найшвидший спосіб пройти від ідеї до першого живого прототипу.
+
+💡 Спробуй прямо зараз: claude.ai → Claude Design → опиши будь-який екран або лендинг. Результат побачиш за хвилину.
+
+#ProductDesign #AITools #ClaudeCode #BuildInPublic`},
+
+{t:'story',a:'перший дзвінок о 21:47',x:`Я не планував бути онлайн. Добре що й не треба.
+
+Вівторок, 21:47. Хтось зателефонував у ресторан щоб забронювати столик. AI-агент Fonitix відповів через 890мс. Уточнив деталі. Підтвердив. Попрощався.
+
+Я дізнався про це зранку — з логів Supabase і Telnyx. Там були всі деталі: час (21:47:23), тривалість (1:43), latency кожної відповіді (890мс, 1,050мс), Stripe metering ($0.09), INSERT у таблицю reservations.
+
+Система спрацювала без мене. Без сповіщень. Просто зробила роботу і залишила audit trail.
+
+Я будував це кілька місяців. Сумнівався чи спрацює в production з реальним клієнтом без тест-умов.
+
+Спрацювало. О 21:47. Поки я спав.
+
+Ось що означає "автономна система": вона не вимагає твоєї уваги щоб функціонувати.
+
+Дивна але хороша почуттів коли твоя робота живе самостійно.
+
+💡 Деплой якомога раніше. Перший реальний дзвінок навчить більше ніж місяць тестування на staging. Не чекай "готовності" — чекай "достатньо безпечно для першого клієнта".
+
+#SaaS #Fonitix #AITools #BuildInPublic`},
+
+{t:'story',a:'Claude додав що я не просив',x:`Субота вечір. Хотів просто зробити flashcard систему.
+
+Написав: "Реалізуй SM-2 алгоритм для flashcard застосунку для вивчення мов. Людина вчить 10 хвилин на день і хоче не пропускати. localStorage. Нуль бекенду."
+
+Через 12 хвилин — відповідь. Відкриваю.
+
+Там: SM-2 ✓, localStorage ✓, streak counter (не просив), flip анімація (не просив), "залишилось карток сьогодні" (не просив).
+
+Моя перша реакція: "е, навіщо все це?"
+
+Потім подумав: я написав "людина хоче не пропускати". Claude побачив цю фразу і вирішив що streak і прогрес — логічно необхідні для "не пропускати".
+
+Він не виконав задачу — він вирішив проблему яку я описав.
+
+Різниця між "реалізуй алгоритм" і "людина хоче досягти X" — це різниця між кодогенератором і thought partner.
+
+З того дня я завжди описую поведінку яку хочу викликати в користувача, а не функцію яку хочу реалізувати.
+
+💡 Спробуй: своє наступне завдання до Claude почни не з "зроби X", а з "я хочу щоб [хто] міг [що робити] і [яке відчуття мати]". Подивись що зміниться.
+
+#ClaudeCode #AITools #BuildInPublic #ProductDesign`},
+
+{t:'story',a:'баг якого не бачить адмін',x:`Є тип багів який найтяжче знайти. Не тому що складний — а тому що нічого не ламається. Просто повертається порожній результат.
+
+Тиждень після запуску Fonitix. Клієнт: "агент прийняв замовлення але кухня нічого не бачить."
+
+Перевіряю з мого адмін-акаунту: замовлення в базі є. Realtime підписка — мовчить.
+
+Годину debugging. Все виглядає ОК.
+
+Потім спробував зайти з тестового акаунту ролі "kitchen-user".
+
+Пусто. Без помилки. Просто пусто.
+
+Причина: я забув RLS SELECT policy для ролі kitchen-user. База мовчки блокувала запит — і повертала порожній масив замість помилки.
+
+Я тестував весь час зі свого адмін-акаунту. Адмін бачить все. Kitchen-user — тільки те що дозволено.
+
+Виправив: один рядок SQL, 10 хвилин.
+
+Урок: для кожної ролі в продукті — окремий тестовий акаунт. Перед деплоєм — тест від кожної ролі. Адмін-акаунт — тільки для налагодження, не для перевірки UX.
+
+💡 Тепер у мене є три тести перед кожним деплоєм: admin, restaurant_owner, kitchen. Якщо всі три бачать правильно — деплою.
+
+#SaaS #ProductDesign #DesignEngineering #BuildInPublic`},
+
+{t:'story',a:'система захистила себе сама',x:`Є "тихі перемоги" про які ніхто не розповідає — бо вони непомітні. Ця з таких.
+
+3 тиждень після запуску Fonitix. Моніторинг: один онбординг провалився.
+
+Відкриваю деталі: клієнт реєструвався, Telnyx API дав timeout при купівлі номера.
+
+Перевіряю базу: акаунту немає. Взагалі.
+
+Транзакційна логіка спрацювала: timeout на кроці 2 → автоматичний rollback кроків 1 і 4 → система повернулась у чистий стан → клієнт побачив "спробуйте ще раз".
+
+Через 3 хвилини клієнт спробував знову. Успішно.
+
+Я нічого не робив.
+
+За перші 2 місяці це повторилось 4 рази — Telnyx має ~0.3% timeout rate під навантаженням у пікові години.
+
+Кожного разу: непомітно для клієнта, нуль зламаних акаунтів, нуль моєї участі.
+
+Я додав цю логіку ще до деплою і думав "напевно ніколи не знадобиться."
+
+Знадобилась одразу.
+
+💡 Будь-яка failure logic яку вважаєш "надлишковою" — спрацює раніше ніж думаєш. Production середовище жорстокіше за staging у 10 разів.
+
+#SaaS #DesignEngineering #Fonitix #BuildInPublic`},
+
+{t:'story',a:'daily-log пише себе сам',x:`Є проблема яку я ігнорував роками. І знайшов рішення яке займає нуль хвилин на день.
+
+Я погано пам'ятаю деталі після довгих технічних сесій. Наступного ранку: 20-30 хвилин щоб відновити контекст. Чому я прийняв оте рішення? Де зупинився?
+
+Спробував вести нотатки вручну — не тримається. Втома о 23:00 перемагає будь-яку дисципліну.
+
+Рішення: одна інструкція в CLAUDE.md.
+
+"Наприкінці кожної сесії автоматично додай в daily-log.md:
+- Що зробили (конкретно)
+- Чому прийняли рішення X а не Y
+- Що залишилось відкритим
+- Будь-що несподіване"
+
+Тепер Claude пише цей лог сам. Кожного разу. Я нічого не роблю.
+
+Зранку: відкриваю daily-log.md → 3 хвилини → я в контексті.
+
+Але є бонус якого не очікував: цей лог став основою для LinkedIn постів. Генератор читає реальні деталі — "вибрали Deepgram через 80мс vs 800мс для Whisper" — а не абстрактне "будував SaaS".
+
+Найкраща документація — та яку не треба писати вручну.
+
+💡 Зроби це зараз: відкрий свій проект → створи CLAUDE.md → додай інструкцію про кінець сесії. Через тиждень матимеш документацію яку інакше б ніколи не написав.
+
+#ClaudeCode #ProductDesign #AITools #BuildInPublic`},
+
+{t:'story',a:'5 днів замість місяця',x:`П'ятниця 17:45. Клієнт: "потрібен преміум сайт для Tesla трансферу. Хочу до понеділка."
+
+Перша думка: "це неможливо". Друга думка: "а що конкретно займе час?"
+
+Дизайн: 1 день якщо no-code прототип одразу.
+Код: 2 дні з Cursor + Claude.
+Деплой: Vercel — 15 хвилин.
+
+Загалом: 5 днів. Відповів: "добре."
+
+Субота: Webflow прототип. Клієнт клікав живі сторінки → знайшов 3 структурні проблеми → я виправив за 45 хвилин. Якби дізнався після коду — 6+ годин переробок.
+
+Неділя: Cursor + Claude. Я описував що має відбуватись → отримував код → перевіряв у браузері. Весь фронтенд за 6 годин.
+
+Понеділок 09:00: деплой, custom domain, передача.
+
+З підрядником: 3-4 тижні, $2,000-5,000. Зі мною + AI: 5 днів.
+
+Але головне — не швидкість. Між моїм рішенням і живим продуктом стояло нуль людей. Нуль передач. Нуль "зіпсованого телефону".
+
+💡 Наступного разу коли хтось просить щось "нереально швидко" — не відповідай одразу "ні". Запитай себе: "що конкретно займе час і чи можна це паралелізувати або прискорити?"
+
+#BuildInPublic #ProductDesign #AITools #DesignEngineering`},
+
+{t:'story',a:'перший платний клієнт',x:`Розповім як я отримав першого платного клієнта Fonitix. Без маркетингу, без cold outreach, без pitch deck.
+
+6 днів після деплою. Показав демо знайомому власнику ресторану.
+
+Не розповів — показав. Зателефонував на тестовий номер при ньому.
+
+AI відповів, уточнив "столик на скількох?", підтвердив бронювання. 1.5 хвилини.
+
+"Воно справді саме це робить?" — "так." — "І записує?" — відкрив дашборд де з'явилось замовлення в реальному часі — "скільки?" — "$249 на місяць." — "Окей."
+
+Реєстрація того ж вечора.
+
+Перший місяць: 312 дзвінків, середня latency 940мс, failure rate 1.2%, billing закрився автоматично.
+
+$249. Один клієнт. Нічого не зломалось.
+
+Це не масштаб і не IPO. Але це validation: архітектура правильна, economics реальна, проблема існує.
+
+З цього починається будь-який SaaS: не з pitch, а з однієї людини яка платить за рішення своєї реальної проблеми.
+
+💡 Найшвидший шлях до першого клієнта: знайди людину яка ЗАРАЗ має проблему яку ти вирішуєш. Покажи в дії — не презентацію, а продукт. Реакція "воно справді це робить?" = ти на правильному шляху.
+
+#SaaS #Fonitix #BuildInPublic #ProductDesign`},
+
+
+{t:'numbers',a:'Canva оцінка $42B',x:`Canva AI 2.0 вийшов — і разом з ним кілька чисел які варто знати.
+
+Оцінка компанії: $42 мільярди (PitchBook, 2025).
+Enterprise бізнес: ріст 100% рік до року.
+Активних юзерів: сотні мільйонів (Canva не розкриває точно).
+
+Що цікаво в їх підході: вони не будують ще один AI стартап. Вони вбудовують AI в продукт яким вже користуються люди щодня.
+
+Canva Design Model — перша foundation model побудована спеціально для дизайн-структур. Не image generation, а розуміння ієрархії, шарів і компонентів.
+
+Для порівняння: Anthropic виріс з $9B ARR (кінець 2025) до $30B+ (квітень 2026). За 4 місяці — потроїлись.
+
+Що це говорить про ринок: AI більше не "майбутнє". Це тепер де водяться гроші. І де ти береш свою частину?
+
+Мій висновок: найкращий час будувати AI-продукти — зараз. Інструменти дешевіють, аудиторія росте, конкуренція ще не переповнена в більшості ніш.
+
+💡 Canva AI 2.0 вже доступний: canva.com → AI Assistant. Sheets AI і Canva Code 2.0 — рекомендую спробувати першими.
+
+🔗 canva.com/newsroom/news/canva-create-2026-ai
+
+#AITools #ProductDesign #DesignTools #Startup`},
+
+{t:'insight',a:'Adobe Firefly агент — що важливо',x:`Adobe в квітні 2026 зробив щось несподіване — і я думаю що більшість пропустили суть.
+
+Firefly AI Assistant тепер агент. Описуєш задачу → він сам викликає Photoshop, Premiere, Lightroom, Illustrator — і робить multi-step workflow.
+
+Але ось що важливо: Adobe додав Claude (Anthropic), Google, Runway, Kling в Firefly як альтернативні моделі. Ти вибираєш яка модель для якої задачі.
+
+Це не просто "ще один AI інструмент". Це marketplace моделей всередині творчого середовища.
+
+Що це означає для нас як практиків:
+
+Раніше: Midjourney для зображень, Runway для відео, Claude для тексту, Figma для UI — і ти перемикаєшся між 4 вкладками.
+
+Тепер: один контекст, різні моделі за запитом.
+
+Це реально змінює workflow. Не революційно — але відчутно.
+
+Мій тест: попросив Firefly AI Assistant зробити варіанти банерів для LinkedIn з моїм текстом. 5 хвилин замість 30 в Canva вручну.
+
+💡 Якщо маєш Creative Cloud: оновись і спробуй Firefly AI Assistant. Особливо якщо робиш marketing content в кількох форматах.
+
+🔗 news.adobe.com/news/2026/04/adobe-new-creative-agent
+
+#AITools #ProductDesign #ContentCreation #DesignTools`},
+
+{t:'question',a:'AI агент читає код сам',x:`Claude Opus 4.7 вийшов і є одна деталь яка мені здається важливою для розробки.
+
+Higher-resolution image support — тепер він читає скріншоти UI і розуміє деталі яких не бачив раніше. Передаєш скрін — він аналізує компоненти, відступи, кольори.
+
+Для мого workflow це означає: замість описувати "у мене там баг в кнопці" — просто скрін → "ось що треба виправити".
+
+Але є питання яке я задаю собі все частіше: якщо AI бачить мій інтерфейс — чи потрібна мені Figma як посередник?
+
+Можливий workflow майбутнього:
+→ Реальний продакшн сайт → скрін → Claude Design → правки → Claude Code → деплой
+
+Без Figma взагалі. Живий сайт як "джерело правди" замість макету.
+
+Це не відповідь. Це питання яке я досліджую зараз.
+
+Що точно вірно: AI бачить UI краще ніж рік тому. І кожен квартал — краще.
+
+💡 Спробуй: відкрий Claude → завантаж скрін свого продукту → попроси "що тут можна покращити з UX точки зору?" Результати можуть здивувати.
+
+🔗 Claude Opus 4.7: anthropic.com/news
+
+#ProductDesign #AITools #ClaudeCode #DesignEngineering`},
+
+{t:'story',a:'MRIACRM — solo vs команда',x:`Клієнт MRIACRM запитав на першій зустрічі: "може найняти трьох дизайнерів?"
+
+Я сказав: "спробуємо один місяць solo. Якщо не встигаємо — додамо."
+
+Два місяці потому: 6 модулів, 60+ компонентів, 40+ екранів. Готово.
+
+Але є деталь яку я не очікував.
+
+На фінальному ревью клієнт сказав: "ця система відчувається цілісно — як ніби один мозок проектував."
+
+Він мав рацію. Бо так і було.
+
+Коли дослідження, архітектура і UI — одна людина — рішення природньо узгоджені. Ти пам'ятаєш ЧОМУ зробив кожен вибір. Нікому нічого не треба передавати.
+
+З командою часто буває gaps: хтось не чув розмову де вирішили X. Хтось зробив компонент не знаючи constraint з user research.
+
+Це не значить solo завжди краще. Але для проектів де consistency важливіша за швидкість — один сильний спеціаліст може давати кращий результат.
+
+Урок: перш ніж наймати команду — запитай чи справді потрібна паралельність, чи потрібна узгодженість. Відповідь не завжди та яку очікуєш.
+
+💡 Коли solo краще: проект де всі рішення сильно залежать одне від одного. Коли команда: модулі незалежні і можна реально паралелізувати.
+
+#ProductDesign #CRM #AITools #UX`},
+
+{t:'builder',a:'3D Warehouse — enterprise UX',x:`Є питання яке я тепер задаю на початку КОЖНОГО проекту. І воно кардинально змінює пріоритети дизайну.
+
+"Що станеться якщо оператор натисне не ту кнопку коли стомлений після 8-годинної зміни?"
+
+Для 3D Warehouse (склад BMW, Skoda, Mondelez, Whirlpool): неправильний рух товару → неправильне відвантаження → зупинка виробничої лінії.
+
+Це не абстрактний ризик. Це $$$, штрафні санкції, репутація.
+
+Як це змінює дизайн:
+
+Замість мінімалістичних іконок → великі підписані кнопки навіть якщо "некрасиво"
+Замість одного підтвердження → три рівні для незворотніх дій
+Замість "завантажую у фоні" → завжди показую timestamp останнього оновлення даних
+Замість красивих переходів → явні стани і жодної ambiguity
+
+Це не занудство — це повага до ставок гри клієнта.
+
+Різниця між consumer і enterprise UX: в consumer помилка = незадоволений юзер. В enterprise помилка = зупинена виробнича лінія.
+
+💡 Для будь-якого проекту: заміни "як це виглядає?" на "що станеться якщо це зламається?" Ця зміна питання повністю змінює пріоритети.
+
+#ProductDesign #Enterprise #UX #DesignSystems`},
+
+{t:'numbers',a:'Claude Code моя статистика',x:`Місяць активної роботи в Claude Code. Реальні числа без прикрас.
+
+8,887 повідомлень. 1.7M токенів. 5 паралельних проектів. Пік активності: 23:00.
+
+Розподіл по моделях:
+→ Claude Sonnet 4.6: 90% задач
+→ Claude Opus 4.6/4.7: 10% — складні архітектурні рішення
+
+Чому не Opus для всього? Sonnet відповідає за 2-3 сек. Opus — 8-12 сек. В потоці розробки пауза 10 сек ламає контекст. Краще трохи менше глибини — але без переривань.
+
+Нічні сесії — 60% всієї роботи. Братислава, GMT+2. Вечір = нуль повідомлень = 3-4 год безперервного фокусу.
+
+За Cal Newport: одне переривання → 20-25 хв щоб повернутись до deep work. При 4 перериваннях за годину — реально ти у фокусі майже нуль.
+
+1.7M токенів за 4 дні = приблизно 13 годин справжньої глибокої роботи. Не 32 офісних годин. 13 якісних.
+
+💡 Якщо хочеш більше від Claude: менше коротких "зроби X" — більше довгих сесій де питаєш "чому" і "що може піти не так". Якість зростає непропорційно від глибини контексту.
+
+#ClaudeCode #AITools #BuildInPublic #Productivity`},
+
+{t:'insight',a:'GPT-5.4 і робочі місця',x:`Є одна стаття яку я прочитав після виходу GPT-5.4 і не можу перестати про неї думати.
+
+GPT-5.4 набрав 75% на OSWorld-V — тест реальних комп'ютерних задач. Людина: 72.4%. AI вперше обігнав середнього офісного працівника.
+
+Але є нюанс якого більшість пропускають.
+
+Тест містить конкретні добре-описані задачі: "відкрий Excel, знайди значення X, скопіюй у презентацію". Execution.
+
+Не "вирішти чи варто взагалі робити цю презентацію". Не "відчуй що клієнту некомфортно з цим рішенням". Це judgment.
+
+IMF нещодавно попередив: AI чинить тиск на entry-level позиції. Перші позиції кар'єри — де люди традиційно вчились execution — скорочуються.
+
+Моє спостереження: якщо більшість твоєї роботи — execution (перенести дані, зробити за шаблоном, написати за алгоритмом) — AI вже кращий або стане незабаром.
+
+Якщо більшість твоєї роботи — judgment (що будувати, кому продавати, як позиціонувати, що залишає відчуття "правильно") — ти ще маєш час.
+
+Інвестуй у judgment. Не тільки у skills.
+
+💡 Питання для рефлексії: яка частка твоєї роботи — execution? Яка — judgment? Де ти хочеш щоб цей баланс був через 3 роки?
+
+#AITools #ProductDesign #Future #Learning`},
+
+
+{t:'story',a:'пост про Canva AI 2.0',x:`Спробував Canva AI 2.0 одразу після релізу. Хочу поділитись чесним враженням — без хайпу.
+
+Написав: "лендинг для SaaS який допомагає ресторанам не пропускати дзвінки. B2B, аудиторія — власники невеликих ресторанів."
+
+Через 30 секунд — повноцінний дизайн. Hero, features, pricing, CTA. З шарами. Клікабельний.
+
+Що мені сподобалось:
+
+Brand Intelligence — підключив свій бренд → всі наступні дизайни автоматично в правильних кольорах і шрифтах. Це було повільним і ручним процесом раніше.
+
+Sheets AI — описав "budget tracker для SaaS" → отримав готову таблицю з формулами і форматуванням. Це реально зручно.
+
+Де я зупинився:
+
+Для серйозного UI/UX продукту з design system і токенами — Figma і Cursor досі глибші. Canva AI 2.0 — це про швидкість першого кроку, не про глибину.
+
+Але для маркетингових матеріалів, соціалок, презентацій і першого ескізу — вже дуже непогано.
+
+Я думаю про це так: Canva AI 2.0 — це перший нормальний AI інструмент де дизайнери, маркетологи і product люди можуть говорити однією мовою без технічних бар'єрів.
+
+💡 Спробуй Canva AI 2.0 для свого наступного marketing asset. Особливо якщо потрібно кілька форматів (Instagram, LinkedIn, email) — він генерує всі одночасно.
+
+🔗 canva.com/newsroom/news/canva-create-2026-ai
+
+#AITools #ProductDesign #DesignTools #BuildInPublic`},
+
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let USER = null;
+let PREFS = {};
+let deletedIds = new Set();
+let scheduled = [];
+let newsPosts = [];
+let selTone = 'all';
+let todayIdx = 0;
+let todayOpen = true;
+
+// ── STORAGE HELPERS ───────────────────────────────────────────────────────────
+function save(key, val) { try { window.storage.set('pp_'+key, JSON.stringify(val)); } catch { localStorage.setItem('pp_'+key, JSON.stringify(val)); } }
+async function load(key, def = null) {
+  try {
+    const r = await window.storage.get('pp_'+key);
+    return r ? JSON.parse(r.value) : def;
+  } catch {
+    const r = localStorage.getItem('pp_'+key);
+    return r ? JSON.parse(r) : def;
+  }
+}
+function saveSync(key, val) { try { localStorage.setItem('pp_'+key, JSON.stringify(val)); } catch {} }
+function loadSync(key, def = null) { try { const r = localStorage.getItem('pp_'+key); return r ? JSON.parse(r) : def; } catch { return def; } }
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init() {
+  USER = loadSync('user', null);
+  if (!USER) { showView('v-landing'); return; }
+  PREFS = loadSync('prefs', {});
+  if (!PREFS.name) { showView('v-onboard'); return; }
+  await loadAppState();
+  showView('v-app');
+  updateAppUI();
+  renderPosts();
+}
+
+async function loadAppState() {
+  deletedIds = new Set(loadSync('deleted', []));
+  scheduled = loadSync('scheduled', []);
+  newsPosts = loadSync('newsposts', []);
+  updateBadges();
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function showAuth(tab) {
+  showView('v-auth');
+  switchAuthTab(tab);
+}
+function switchAuthTab(tab) {
+  document.getElementById('auth-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('auth-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('tab-login').classList.toggle('on', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('on', tab === 'register');
+}
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (!email) { toast('Введи email', 'err'); return; }
+  USER = loadSync('user_'+email, null);
+  if (!USER) { toast('Акаунт не знайдено. Зареєструйся.', 'err'); return; }
+  saveSync('user', USER);
+  PREFS = loadSync('prefs_'+email, {});
+  if (!PREFS.name) { showView('v-onboard'); } else { loadAppState(); showView('v-app'); updateAppUI(); renderPosts(); }
+}
+function demoLogin() {
+  USER = { name: 'Danil Gorbunov', email: 'demo@postpilot.ai' };
+  PREFS = { name:'Danil Gorbunov', role:'Product Designer + AI Builder', location:'Bratislava', bio:'Solo builder який будує AI-продукти від дизайну до деплою.', projects:'Fonitix — AI-агент для ресторанів\nvocab-app — SM-2 flashcard система\nAI Lab — Claude Code environment', stack:'Claude Code, Cursor, Next.js, Supabase, Vercel', audience:'Product designers, AI builders', tone:'friendly', lang:'uk', apikey:'', length:'mix', avoid:'хайп без фактів', linkedin:'https://linkedin.com/in/danilgorbunov', site:'https://danilgorbunov.com' };
+  saveSync('user', USER);
+  loadAppState(); showView('v-app'); updateAppUI(); renderPosts();
+  toast('Ласкаво просимо до демо!', 'ok');
+}
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  if (!name || !email) { toast('Заповни ім\'я і email', 'err'); return; }
+  USER = { name, email };
+  saveSync('user', USER);
+  saveSync('user_'+email, USER);
+  PREFS = { name };
+  showView('v-onboard');
+}
+function doLogout() {
+  saveSync('user', null);
+  USER = null; PREFS = {};
+  showView('v-landing');
+  toast('До зустрічі!');
+}
+
+// ── ONBOARDING ────────────────────────────────────────────────────────────────
+let obStep = 1;
+const OB_STEPS = 4;
+
+function obNext() {
+  if (obStep < OB_STEPS) {
+    setObStep(obStep + 1);
+  } else {
+    finishOnboarding();
+  }
+}
+function obBack() { if (obStep > 1) setObStep(obStep - 1); }
+
+function setObStep(n) {
+  obStep = n;
+  document.querySelectorAll('.onboard-step').forEach((s,i) => s.classList.toggle('active', i+1 === n));
+  document.querySelectorAll('.prog-step').forEach((s,i) => {
+    const dot = s.querySelector('.prog-dot');
+    dot.classList.toggle('done', i+1 < n);
+    dot.classList.toggle('active', i+1 === n);
+    if (i+1 < n) dot.innerHTML = '✓';
+    else dot.innerHTML = i+1;
+  });
+  document.getElementById('ob-step-indicator').textContent = `Крок ${n} з ${OB_STEPS}`;
+  document.getElementById('ob-back-btn').style.visibility = n > 1 ? 'visible' : 'hidden';
+  document.getElementById('ob-next-btn').textContent = n === OB_STEPS ? 'Готово →' : 'Далі →';
+}
+
+function toggleTopic(el) { el.classList.toggle('on'); }
+function toggleTone(el, val) { document.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('on')); el.classList.add('on'); PREFS.tone = val; }
+function toggleLang(el, val) { document.querySelectorAll('.tone-chip[data-lang]').forEach(c => c.classList.remove('on')); el.classList.add('on'); el.dataset.lang = val; PREFS.lang = val; }
+
+function finishOnboarding() {
+  PREFS.name = document.getElementById('ob-name').value || USER.name;
+  PREFS.role = document.getElementById('ob-role').value;
+  PREFS.location = document.getElementById('ob-location').value;
+  PREFS.bio = document.getElementById('ob-bio').value;
+  PREFS.facts = document.getElementById('ob-facts').value;
+  PREFS.projects = document.getElementById('ob-projects').value;
+  PREFS.stack = document.getElementById('ob-stack').value;
+  PREFS.audience = document.getElementById('ob-audience').value;
+  PREFS.topics = [...document.querySelectorAll('.topic-item.on')].map(el => el.textContent);
+  PREFS.avoid = document.getElementById('ob-avoid').value;
+  PREFS.example = document.getElementById('ob-example').value;
+  PREFS.length = document.getElementById('ob-length').value;
+  PREFS.linkedin = document.getElementById('ob-linkedin').value;
+  PREFS.site = document.getElementById('ob-site').value;
+  PREFS.apikey = document.getElementById('ob-apikey').value;
+  PREFS.litoken = document.getElementById('ob-litoken').value;
+  saveSync('prefs', PREFS);
+  if (USER.email) saveSync('prefs_'+USER.email, PREFS);
+  loadAppState();
+  showView('v-app');
+  updateAppUI();
+  renderPosts();
+  toast('🎉 Профіль збережено! Ласкаво просимо до PostPilot!', 'ok');
+}
+
+// ── APP UI ────────────────────────────────────────────────────────────────────
+function updateAppUI() {
+  const name = PREFS.name || USER?.name || 'User';
+  const email = USER?.email || '';
+  Q('#sb-user-name').textContent = PREFS.role || 'LinkedIn Builder';
+  Q('#sp-av').textContent = name[0].toUpperCase();
+  Q('#sp-name').textContent = name;
+  Q('#sp-email').textContent = email;
+
+  const apiOk = PREFS.apikey && PREFS.apikey.startsWith('sk-');
+  const liOk = PREFS.litoken;
+  const apiPill = Q('#api-pill');
+  apiPill.textContent = apiOk ? 'api ok' : 'no key';
+  apiPill.className = 'tb-pill ' + (apiOk ? 'ok' : 'dim');
+  Q('#li-pill').textContent = liOk ? 'linkedin' : 'clipboard';
+  Q('#li-pill').style.borderColor = liOk ? 'var(--li)' : 'var(--t3)';
+  Q('#li-pill').style.color = liOk ? 'var(--li)' : 'var(--t3)';
+
+  // fill settings
+  Q('#s-name').value = PREFS.name || '';
+  Q('#s-role').value = PREFS.role || '';
+  Q('#s-location').value = PREFS.location || '';
+  Q('#s-bio').value = PREFS.bio || '';
+  Q('#s-projects').value = PREFS.projects || '';
+  Q('#s-avoid').value = PREFS.avoid || '';
+  Q('#s-example').value = PREFS.example || '';
+  Q('#s-stack').value = PREFS.stack || '';
+  Q('#s-apikey').value = PREFS.apikey || '';
+  Q('#s-linkedin').value = PREFS.linkedin || '';
+  Q('#s-litoken').value = PREFS.litoken || '';
+  Q('#s-site').value = PREFS.site || '';
+}
+
+function onApiKeyChange() {
+  PREFS.apikey = Q('#s-apikey').value.trim();
+  updateAppUI();
+}
+
+function saveSettings() {
+  PREFS.name = Q('#s-name').value;
+  PREFS.role = Q('#s-role').value;
+  PREFS.location = Q('#s-location').value;
+  PREFS.bio = Q('#s-bio').value;
+  PREFS.projects = Q('#s-projects').value;
+  PREFS.avoid = Q('#s-avoid').value;
+  PREFS.example = Q('#s-example').value;
+  PREFS.stack = Q('#s-stack').value;
+  PREFS.apikey = Q('#s-apikey').value;
+  PREFS.linkedin = Q('#s-linkedin').value;
+  PREFS.litoken = Q('#s-litoken').value;
+  PREFS.site = Q('#s-site').value;
+  saveSync('prefs', PREFS);
+  if (USER?.email) saveSync('prefs_'+USER.email, PREFS);
+  updateAppUI();
+  toast('✓ Налаштування збережено', 'ok');
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
+  Q('#panel-' + name).classList.add('active');
+  el.classList.add('on');
+  Q('#topbar-title').textContent = {posts:'Всі пости', scheduled:'Заплановані', news:'З новин', deleted:'Видалені', settings:'Налаштування'}[name] || name;
+  Q('#filter-bar').style.display = name === 'posts' ? 'flex' : 'none';
+  if (name === 'scheduled') renderScheduled();
+  if (name === 'deleted') renderDeleted();
+}
+
+// ── POSTS ─────────────────────────────────────────────────────────────────────
+function renderPosts() {
+  const q = (Q('#app-search')?.value || '').toLowerCase();
+  const vis = P.filter((p, i) => {
+    if (deletedIds.has(i)) return false;
+    if (selTone !== 'all' && p.t !== selTone) return false;
+    if (q && !p.x.toLowerCase().includes(q) && !p.a.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  Q('#posts-grid').innerHTML = vis.map(p => {
+    const i = P.indexOf(p);
+    const isSch = scheduled.some(s => s.id === i);
+    return `<div class="post-card" id="pc${i}">
+      <div class="card-head">
+        <span class="card-num">${i+1}</span>
+        <span class="tone-tag t-${p.t}">${p.t}</span>
+        ${isSch ? '<span class="sch-badge">завтра</span>' : ''}
+        <span class="card-angle">${p.a}</span>
+      </div>
+      <div class="card-body">${esc(p.x)}</div>
+      <div class="card-foot">
+        <span class="card-chars">${p.x.length} симв</span>
+        <button class="btn-card btn-del" onclick="delPost(${i})">✕</button>
+        <button class="btn-card btn-sch${isSch?' on':''}" onclick="schedPost(${i})">${isSch?'✓':'+'} завтра</button>
+        <button class="btn-card btn-copy-card" onclick="copyPost(${i})">Копіювати</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">✦</span>Постів не знайдено</div>';
+  updateBadges();
+}
+
+function filt(t, el) {
+  selTone = t;
+  document.querySelectorAll('.chip[data-t]').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  renderPosts();
+}
+
+function updateBadges() {
+  const vis = P.filter((_,i) => !deletedIds.has(i)).length;
+  Q('#nb-posts').textContent = vis;
+  Q('#nb-sch').textContent = scheduled.length;
+  Q('#nb-del').textContent = deletedIds.size;
+  Q('#nb-news').textContent = newsPosts.length;
+}
+
+// ── DELETE / SCHEDULE ─────────────────────────────────────────────────────────
+function delPost(i) {
+  deletedIds.add(i);
+  scheduled = scheduled.filter(s => s.id !== i);
+  saveSync('deleted', [...deletedIds]);
+  saveSync('scheduled', scheduled);
+  const card = Q('#pc' + i);
+  if (card) { card.style.opacity = '0'; card.style.transition = 'opacity .2s'; }
+  setTimeout(() => renderPosts(), 220);
+  updateBadges();
+  toast(`Пост #${i+1} видалено`);
+}
+
+function schedPost(i) {
+  const idx = scheduled.findIndex(s => s.id === i);
+  if (idx >= 0) {
+    scheduled.splice(idx, 1);
+    saveSync('scheduled', scheduled);
+    renderPosts();
+    toast(`Пост #${i+1} прибрано з плану`);
+    return;
+  }
+  const tom = new Date(); tom.setDate(tom.getDate() + 1);
+  const dateStr = tom.toLocaleDateString('uk-UA', { weekday:'short', day:'numeric', month:'long' });
+  scheduled.push({ id: i, date: dateStr, ts: tom.toISOString() });
+  saveSync('scheduled', scheduled);
+  renderPosts();
+  toast(`✓ Пост #${i+1} заплановано на ${dateStr}`, 'ok');
+}
+
+function copyPost(i) {
+  navigator.clipboard.writeText(P[i].x).then(() => {
+    const card = Q('#pc' + i);
+    if (card) { card.classList.add('copied'); setTimeout(() => card.classList.remove('copied'), 2000); }
+    toast(`✓ Пост #${i+1} скопійовано`, 'ok');
+    if (PREFS.litoken) {
+      publishToLinkedIn(P[i].x);
+    } else {
+      setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 700);
+    }
+  }).catch(() => toast('Помилка копіювання', 'err'));
+}
+
+function renderScheduled() {
+  const el = Q('#sch-wrap');
+  if (!scheduled.length) { el.innerHTML = '<div class="empty-state"><span class="empty-icon">📅</span>Немає запланованих постів<br>Натисни "+ завтра" на будь-якому пості</div>'; return; }
+  el.innerHTML = scheduled.map((s, si) => {
+    const p = P[s.id]; if (!p) return '';
+    return `<div class="sch-card">
+      <div class="sch-when"><div class="sch-when-lbl">ЗАВТРА</div><div class="sch-when-day">${s.date}</div><div class="tone-tag t-${p.t}" style="display:inline-block;margin-top:8px">${p.t}</div></div>
+      <div class="sch-text" id="scht${si}" onclick="this.classList.toggle('expanded')">${esc(p.x)}</div>
+      <div class="sch-actions">
+        <button class="btn-sch-copy" onclick="navigator.clipboard.writeText(P[${s.id}].x).then(()=>toast('✓ Скопійовано','ok'))">Copy</button>
+        <button class="btn-sch-rem" onclick="scheduled.splice(${si},1);saveSync('scheduled',scheduled);updateBadges();renderScheduled();toast('Прибрано')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDeleted() {
+  const el = Q('#del-grid');
+  if (!deletedIds.size) { el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🗑</span>Немає видалених постів</div>'; return; }
+  el.innerHTML = [...deletedIds].map(i => {
+    const p = P[i]; if (!p) return '';
+    return `<div class="post-card del-card" style="opacity:.4">
+      <div class="card-head"><span class="card-num">${i+1}</span><span class="tone-tag t-${p.t}">${p.t}</span><span class="card-angle">${p.a}</span></div>
+      <div class="card-body">${esc(p.x)}</div>
+      <div class="card-foot"><span class="card-chars">${p.x.length} симв</span><button class="btn-restore" onclick="restorePost(${i})">↩ відновити</button></div>
+    </div>`;
+  }).join('');
+}
+
+function restorePost(i) {
+  deletedIds.delete(i);
+  saveSync('deleted', [...deletedIds]);
+  updateBadges(); renderDeleted(); renderPosts();
+  toast(`Пост #${i+1} відновлено`, 'ok');
+}
+
+// ── TODAY PANEL ───────────────────────────────────────────────────────────────
+function showTodayPanel() {
+  const avail = P.map((_,i) => i).filter(i => !deletedIds.has(i));
+  if (!avail.length) { toast('Немає доступних постів'); return; }
+  todayIdx = todayIdx % avail.length;
+  const idx = avail[todayIdx];
+  const p = P[idx];
+  const today = new Date().toLocaleDateString('uk-UA', { weekday:'long', day:'numeric', month:'long' });
+  Q('#today-date').textContent = today;
+  Q('#today-text').textContent = p.x;
+  Q('#today-meta').textContent = `#${idx+1} · ${p.t} · ${p.a}`;
+  Q('#today-panel').dataset.idx = idx;
+  Q('#today-panel').style.display = 'block';
+  Q('#today-body').classList.add('open');
+  Q('#today-caret').classList.add('open');
+}
+
+function toggleToday() {
+  const body = Q('#today-body'), caret = Q('#today-caret');
+  body.classList.toggle('open');
+  caret.classList.toggle('open');
+}
+
+function publishToday() {
+  const idx = parseInt(Q('#today-panel').dataset.idx || '0');
+  navigator.clipboard.writeText(P[idx].x).then(() => {
+    toast('✓ Скопійовано! Відкриваю LinkedIn...', 'ok');
+    Q('#today-panel').style.display = 'none';
+    setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 700);
+  });
+}
+
+function skipToday() {
+  const avail = P.map((_,i) => i).filter(i => !deletedIds.has(i));
+  todayIdx = (todayIdx + 1) % Math.max(avail.length, 1);
+  showTodayPanel();
+}
+
+// ── NEWS ──────────────────────────────────────────────────────────────────────
+// ── NEWS GENERATION ───────────────────────────────────────────────────────
+const TOPICS = {
+  ai:     { label: 'AI та LLM',      query: 'latest AI LLM tools news 2025 site:techcrunch.com OR site:theverge.com OR site:venturebeat.com OR site:wired.com', keywords: 'AI artificial intelligence machine learning' },
+  design: { label: 'Product Design', query: 'product design UX tools news 2025 site:nngroup.com OR site:smashingmagazine.com OR site:designmilk.com', keywords: 'product design UX interface' },
+  tech:   { label: 'Технології',     query: 'technology startup product launch news 2025 site:techcrunch.com OR site:producthunt.com OR site:hacker news', keywords: 'technology software development' },
+  saas:   { label: 'SaaS & Startup', query: 'SaaS startup funding product news 2025 site:techcrunch.com OR site:sifted.eu OR site:eu-startups.com', keywords: 'SaaS startup business' },
+  all:    { label: 'Все',            query: 'AI product design technology startup news 2025', keywords: 'technology AI design startup' },
+};
+
+const NEWS_SYSTEM = `Ти — Danil Gorbunov, Product Designer + Full-Stack Builder (AI) + Mentor, Братислава.
+Будуєш реальні AI-продукти сам (Claude Code, Cursor, Claude).
+
+ЗАВДАННЯ: знайди 3 актуальні новини за темою запиту. Для кожної новини напиши LinkedIn пост у своєму стилі.
+
+СТИЛЬ ПОСТІВ:
+- Мова: українська + технічні терміни English (Next.js, GPT-4o, API — завжди EN)
+- Конкретні числа, факти, технічні деталі з новини
+- Свій коментар або висновок як практика який реально використовує ці інструменти
+- Без хайпу і пафосу — ділишся спостереженням
+- Фінал-удар або практичний висновок
+- Хештеги 3-5 в кінці
+- Довжина: 400-800 символів
+
+ФОРМАТ ВІДПОВІДІ: поверни ТІЛЬКИ валідний JSON масив, без markdown, без backticks, без пояснень:
+[
+  {
+    "post": "текст LinkedIn поста",
+    "headline": "заголовок новини одним реченням",
+    "source": "назва видання",
+    "imageQuery": "2-3 english keywords for image search (specific, visual)",
+    "topic": "ai|design|tech|saas"
+  }
+]`;
+
+async function generateNews(topicKey) {
+  const apiKey = await getStoredKey();
+  if (!apiKey) { toast('Додай Anthropic API key в Config →'); return; }
+
+  const topic = TOPICS[topicKey];
+  const btnId = topicKey === 'all' ? 'btn-all3' : `btn-${topicKey}`;
+  const btn = document.getElementById(btnId);
+  if (btn) btn.classList.add('loading', 'active');
+
+  // Show skeletons
+  const grid = document.getElementById('news-grid');
+  grid.innerHTML = [1,2,3].map(()=>`
+    <div class="news-skeleton">
+      <div class="skel-img"></div>
+      <div class="skel-line short"></div>
+      <div class="skel-line long"></div>
+      <div class="skel-line med"></div>
+      <div class="skel-line long"></div>
+      <div class="skel-line short"></div>
+    </div>`).join('');
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2500,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: NEWS_SYSTEM,
+        messages: [{ role: 'user', content: `Знайди 3 свіжі новини по темі: "${topic.label}". Запит для пошуку: ${topic.query}. Згенеруй JSON як описано.` }]
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    // Extract text from all content blocks
+    const fullText = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    // Parse JSON from response
+    const jsonMatch = fullText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('JSON не знайдено у відповіді');
+    const posts = JSON.parse(jsonMatch[0]);
+
+    // Fetch images for each post
+    const withImages = await Promise.all(posts.map(async (p) => {
+      const img = await fetchImage(p.imageQuery || topic.keywords);
+      return { ...p, imgUrl: img.url, imgAlt: img.alt };
+    }));
+
+    newsPosts = [...withImages, ...newsPosts];
+    const nb = document.getElementById('tab-news-cnt');
+    if (nb) nb.textContent = newsPosts.length;
+    renderNewsPosts(withImages);
+    toast(`✓ ${withImages.length} постів згенеровано — тема: ${topic.label}`, 'ok');
+
+  } catch(e) {
+    grid.innerHTML = `<div class="news-empty">Помилка: ${esc(e.message)}<br>Перевір API key у Config</div>`;
+    toast('Помилка генерації', 'err');
+  } finally {
+    if (btn) btn.classList.remove('loading', 'active');
+  }
+}
+
+// Fetch image from Lexica (free AI image search, no key needed)
+async function fetchImage(query) {
+  try {
+    const encoded = encodeURIComponent(query);
+    const r = await fetch(`https://lexica.art/api/v1/search?q=${encoded}`);
+    const d = await r.json();
+    if (d.images && d.images.length > 0) {
+      const pick = d.images[Math.floor(Math.random() * Math.min(d.images.length, 8))];
+      return { url: pick.src, alt: query };
+    }
+  } catch {}
+  // Fallback: Unsplash source (may still redirect)
+  try {
+    const kw = encodeURIComponent(query.replace(/\s+/g, ','));
+    return { url: `https://source.unsplash.com/800x450/?${kw}`, alt: query };
+  } catch {}
+  return { url: '', alt: query };
+}
+
+async function getStoredKey() {
+  try { const k = await window.storage.get('apiKey'); return k ? k.value : ''; } catch { return ''; }
+}
+
+function renderNewsPosts(posts) {
+  const grid = document.getElementById('news-grid');
+  if (!posts.length) { grid.innerHTML = '<div class="news-empty">Постів не знайдено. Спробуй іншу тему.</div>'; return; }
+  const topicColors = { ai: '#7fa4f5', design: '#a78bfa', tech: '#4ade80', saas: '#fbbf24' };
+
+  grid.innerHTML = posts.map((p, i) => {
+    const col = topicColors[p.topic] || '#7fa4f5';
+    const imgHtml = p.imgUrl
+      ? `<img class="news-img" src="${p.imgUrl}" alt="${esc(p.imgAlt||'')}" onerror="this.parentElement.innerHTML='<div class=\\"news-img-placeholder\\">◈</div>'">`
+      : `<div class="news-img-placeholder">◈</div>`;
+    return `<div class="news-card">
+      <div class="news-img-wrap">
+        ${imgHtml}
+        <div class="news-topic-pill">${esc(p.topic?.toUpperCase()||'NEWS')}</div>
+        ${p.imgUrl ? `<button class="news-img-btn" onclick="downloadImg('${p.imgUrl.replace(/'/g,"\\'")}','img-${i}')">⬇ зберегти фото</button>` : ''}
+      </div>
+      <div class="news-source"><div class="news-source-dot"></div>${esc(p.source||'')} · ${esc(p.headline||'')}</div>
+      <div class="news-body" id="nb${i}">${esc(p.post)}</div>
+      <div class="news-foot">
+        <span class="news-chars">${p.post.length} симв</span>
+        <button class="btn-news-save" onclick="saveNewsPost(${i})">+ до списку</button>
+        <button class="btn-news-copy" onclick="copyNews(${i})">Копіювати</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyNews(i) {
+  const el = document.getElementById('nb'+i); if(!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => toast('✓ Скопійовано!')).catch(()=>{});
+}
+
+function saveNewsPost(i) {
+  const el = document.getElementById('nb'+i); if(!el) return;
+  const text = el.textContent;
+  const newId = P.length + newsPosts.length + Date.now();
+  // Add to main list as a temporary post (stored in session)
+  P.push({ t: 'insight', a: 'з новин', x: text });
+  updateBadges(); render();
+  toast('✓ Збережено до списку "Всі пости"');
+}
+
+async function downloadImg(url, name) {
+  try {
+    // Open image in new tab — most reliable cross-origin approach
+    window.open(url, '_blank');
+    toast('✓ Зображення відкрито у новій вкладці — збережи через ПКМ');
+  } catch(e) { toast('Відкрий зображення вручну', 'err'); }
+}
+
+// Override genNews to use user profile
+async function genNews(topicKey) {
+  const apiKey = PREFS.apikey;
+  if (!apiKey || !apiKey.startsWith('sk-')) {
+    toast('Додай Anthropic API key в Налаштування →', 'err');
+    switchTab('settings', document.querySelector('.nav-item:last-child'));
+    return;
+  }
+
+  const TOPICS_MAP = {
+    ai: { label:'AI та LLM', query:'latest AI LLM Claude GPT news 2026 product tools' },
+    design: { label:'Product Design', query:'product design UX tools AI 2026 news' },
+    tech: { label:'Технології', query:'technology startup product launch 2026 news' },
+    saas: { label:'SaaS & Startup', query:'SaaS startup AI product 2026 news' },
+    all: { label:'Все', query:'AI product design technology startup 2026 news' },
+  };
+
+  const topic = TOPICS_MAP[topicKey];
+  const btnId = 'tnb-' + (topicKey === 'all' ? 'all' : topicKey);
+  const btn = Q('#' + btnId);
+  if (btn) btn.classList.add('loading');
+
+  const grid = Q('#news-grid');
+  grid.innerHTML = [1,2,3].map(() => `<div class="skel"><div class="skel-img"></div><div class="skel-l short"></div><div class="skel-l long"></div><div class="skel-l med"></div></div>`).join('');
+
+  const profileCtx = `Ти — ${PREFS.name || 'Product Designer'}${PREFS.role ? ', ' + PREFS.role : ''}${PREFS.location ? ', ' + PREFS.location : ''}.${PREFS.bio ? ' ' + PREFS.bio : ''}${PREFS.projects ? ' Проекти: ' + PREFS.projects.slice(0,200) : ''}`;
+
+  const sys = `${profileCtx}
+
+ЗАВДАННЯ: знайди 3 актуальні новини. Напиши LinkedIn пост для кожної — від першої особи, у своєму стилі.
+Стиль: ${PREFS.tone || 'дружній'}, мова: ${PREFS.lang === 'en' ? 'English' : 'українська'}, тон: без хайпу, з особистим коментарем і практичним висновком.
+${PREFS.avoid ? 'Уникати: ' + PREFS.avoid : ''}
+
+Поверни ТІЛЬКИ JSON (без markdown): [{"post":"...","headline":"...","source":"...","imageQuery":"3 english keywords","topic":"${topicKey}"}]`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2500,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: sys,
+        messages: [{ role: 'user', content: `Знайди 3 свіжі новини по темі: "${topic.label}". Запит: ${topic.query}. JSON.` }]
+      })
+    });
+    const data = await resp.json();
+    const fullText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const match = fullText.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('JSON не знайдено');
+    const posts = JSON.parse(match[0]);
+    const withImgs = await Promise.all(posts.map(async p => {
+      const img = await fetchImg(p.imageQuery || topic.label);
+      return { ...p, imgUrl: img.url, imgAlt: img.alt };
+    }));
+    newsPosts = [...withImgs, ...newsPosts];
+    saveSync('newsposts', newsPosts.slice(0, 50));
+    updateBadges();
+    renderNewsGrid(withImgs, grid);
+    toast(`✓ ${withImgs.length} постів з новин готові`, 'ok');
+  } catch(e) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">⚠</span>Помилка: ${esc(e.message)}</div>`;
+    toast('Помилка генерації', 'err');
+  } finally { if (btn) btn.classList.remove('loading'); }
+}
+
+async function fetchImg(query) {
+  try {
+    const r = await fetch(`https://lexica.art/api/v1/search?q=${encodeURIComponent(query)}`);
+    const d = await r.json();
+    if (d.images?.length) {
+      const pick = d.images[Math.floor(Math.random() * Math.min(d.images.length, 8))];
+      return { url: pick.src, alt: query };
+    }
+  } catch {}
+  return { url: `https://source.unsplash.com/800x450/?${encodeURIComponent(query.replace(/\s+/g, ','))}`, alt: query };
+}
+
+function renderNewsGrid(posts, grid) {
+  grid.innerHTML = posts.map((p, i) => {
+    const imgHtml = p.imgUrl
+      ? `<img class="news-img" src="${p.imgUrl}" alt="${esc(p.imgAlt||'')}" onerror="this.parentElement.innerHTML='<div class=\\"news-img-ph\\">◈</div>'">`
+      : `<div class="news-img-ph">◈</div>`;
+    return `<div class="news-card">
+      <div class="news-img-wrap">
+        ${imgHtml}
+        <div class="news-topic-pill">${p.topic?.toUpperCase()||'NEWS'}</div>
+        ${p.imgUrl ? `<div class="news-img-dl" onclick="window.open('${p.imgUrl.replace(/'/g,"\\'")}','_blank')">⬇ фото</div>` : ''}
+      </div>
+      <div class="news-source-row"><div class="news-src-dot"></div>${esc(p.source||'')} · ${esc(p.headline||'')}</div>
+      <div class="news-body-text" id="nbt${i}">${esc(p.post)}</div>
+      <div class="news-foot">
+        <span class="news-chars">${p.post.length} симв</span>
+        <button class="btn-news-save" onclick="saveNewsPost(${i})">+ до списку</button>
+        <button class="btn-news-copy" onclick="copyNews(${i})">Копіювати</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyNews(i) {
+  const el = Q('#nbt' + i); if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => toast('✓ Скопійовано!', 'ok'));
+}
+
+function saveNewsPost(i) {
+  const el = Q('#nbt' + i); if (!el) return;
+  P.push({ t: 'insight', a: 'з новин', x: el.textContent });
+  updateBadges(); renderPosts();
+  toast('✓ Додано до списку постів', 'ok');
+}
+
+// ── LINKEDIN PUBLISH ──────────────────────────────────────────────────────────
+async function publishToLinkedIn(text) {
+  if (!PREFS.litoken || !PREFS.liUrn) return;
+  try {
+    const resp = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${PREFS.litoken}`, 'Content-Type': 'application/json', 'X-Restli-Protocol-Version': '2.0.0' },
+      body: JSON.stringify({ author: PREFS.liUrn, lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text }, shareMediaCategory: 'NONE' } }, visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' } })
+    });
+    if (resp.status === 201) toast('✓ Опубліковано на LinkedIn!', 'ok');
+  } catch {}
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function Q(s) { return document.querySelector(s); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+let tt;
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  clearTimeout(tt);
+  tt = setTimeout(() => el.remove(), 3500);
+}
+
+init();
+</script>
+</body>
+</html>
