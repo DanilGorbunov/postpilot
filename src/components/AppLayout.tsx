@@ -1,0 +1,465 @@
+import { useState, CSSProperties } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { type User, clearSession } from '../lib/auth';
+import { type AppTab } from '../App';
+import PostsView from './PostsView';
+import CalendarView from './CalendarView';
+import SettingsView from './SettingsView';
+import IdeasView from './IdeasView';
+import NewsView from './NewsView';
+import ScheduleView from './ScheduleView';
+
+interface Props {
+  user: User;
+  currentTab: AppTab;
+  onTabChange: (tab: AppTab) => void;
+  onLogout: () => void;
+  demoMode: boolean;
+}
+
+const NAV_ITEMS: { id: AppTab; label: string; icon: string }[] = [
+  { id: 'posts', label: 'Posts', icon: '◈' },
+  { id: 'schedule', label: 'Schedule', icon: '◉' },
+  { id: 'calendar', label: 'Calendar', icon: '▦' },
+  { id: 'news', label: 'News', icon: '◎' },
+  { id: 'ideas', label: 'Ideas', icon: '✦' },
+  { id: 'settings', label: 'Settings', icon: '⊞' },
+];
+
+const TAB_TITLES: Record<AppTab, string> = {
+  posts: 'Posts',
+  schedule: 'Scheduled',
+  calendar: 'Calendar',
+  news: 'News',
+  ideas: 'Ideas',
+  settings: 'Settings',
+};
+
+export default function AppLayout({ user, currentTab, onTabChange, onLogout, demoMode }: Props) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const prefs = useQuery(
+    api.users.getPrefs,
+    !demoMode ? { userId: user._id as any } : 'skip'
+  );
+
+  const posts = useQuery(
+    api.posts.getPosts,
+    !demoMode ? { userId: user._id as any, status: 'active' as const } : 'skip'
+  );
+  const scheduledPosts = useQuery(
+    api.posts.getPosts,
+    !demoMode ? { userId: user._id as any, status: 'scheduled' as const } : 'skip'
+  );
+  const ideas = useQuery(
+    api.ideas.getIdeas,
+    !demoMode ? { userId: user._id as any } : 'skip'
+  );
+
+  const postCount = posts?.length ?? 0;
+  const scheduledCount = scheduledPosts?.length ?? 0;
+  const ideasCount = ideas?.filter(i => !i.used).length ?? 0;
+
+  const handleLogout = () => {
+    clearSession();
+    onLogout();
+  };
+
+  const hasApiKey = prefs?.apikey && prefs.apikey.startsWith('sk-ant');
+  const hasLinkedIn = !!(prefs?.linkedin);
+
+  const sidebarStyle: CSSProperties = {
+    width: 220,
+    flexShrink: 0,
+    background: 'var(--s1)',
+    borderRight: '1px solid var(--bd)',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    position: 'sticky',
+    top: 0,
+  };
+
+  const rootStyle: CSSProperties = {
+    display: 'flex',
+    height: '100vh',
+    overflow: 'hidden',
+  };
+
+  const mainStyle: CSSProperties = {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    background: 'var(--bg)',
+  };
+
+  const topbarStyle: CSSProperties = {
+    borderBottom: '1px solid var(--bd)',
+    padding: '12px 24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    background: 'var(--s1)',
+    flexShrink: 0,
+  };
+
+  const contentStyle: CSSProperties = {
+    flex: 1,
+    overflow: 'auto',
+    padding: 0,
+  };
+
+  const logoStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '18px 16px 14px',
+    borderBottom: '1px solid var(--bd)',
+  };
+
+  const logoIconStyle: CSSProperties = {
+    width: 30,
+    height: 30,
+    borderRadius: 7,
+    background: 'var(--ac)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 800,
+    fontSize: 15,
+    color: '#fff',
+    flexShrink: 0,
+  };
+
+  const logoTextStyle: CSSProperties = {
+    fontFamily: 'var(--head)',
+    fontSize: 16,
+    fontWeight: 800,
+    color: 'var(--t1)',
+  };
+
+  const navStyle: CSSProperties = {
+    flex: 1,
+    padding: '10px 10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  };
+
+  const navItemStyle = (active: boolean): CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '9px 12px',
+    borderRadius: 'var(--r)',
+    background: active ? 'rgba(107,79,255,.15)' : 'none',
+    color: active ? 'var(--t1)' : 'var(--t3)',
+    border: active ? '1px solid rgba(107,79,255,.3)' : '1px solid transparent',
+    cursor: 'pointer',
+    fontFamily: 'var(--head)',
+    fontSize: 13.5,
+    fontWeight: active ? 600 : 400,
+    transition: 'all .15s',
+    width: '100%',
+    textAlign: 'left' as const,
+  });
+
+  const navIconStyle: CSSProperties = {
+    fontSize: 14,
+    width: 18,
+    textAlign: 'center' as const,
+    flexShrink: 0,
+  };
+
+  const badgeStyle: CSSProperties = {
+    marginLeft: 'auto',
+    background: 'rgba(107,79,255,.25)',
+    color: 'var(--ac2)',
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '1px 6px',
+    borderRadius: 10,
+    minWidth: 18,
+    textAlign: 'center' as const,
+  };
+
+  const profileSectionStyle: CSSProperties = {
+    borderTop: '1px solid var(--bd)',
+    padding: '12px 10px',
+    position: 'relative',
+  };
+
+  const profileBtnStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '8px 10px',
+    borderRadius: 'var(--r)',
+    cursor: 'pointer',
+    background: 'none',
+    border: '1px solid transparent',
+    width: '100%',
+    transition: 'all .15s',
+  };
+
+  const avatarStyle: CSSProperties = {
+    width: 30,
+    height: 30,
+    borderRadius: '50%',
+    background: 'var(--ac)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'var(--head)',
+    fontWeight: 700,
+    fontSize: 13,
+    color: '#fff',
+    flexShrink: 0,
+    overflow: 'hidden',
+  };
+
+  const userNameStyle: CSSProperties = {
+    fontFamily: 'var(--head)',
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--t1)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    maxWidth: 110,
+  };
+
+  const userEmailStyle: CSSProperties = {
+    fontFamily: 'var(--head)',
+    fontSize: 11,
+    color: 'var(--t3)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    maxWidth: 110,
+  };
+
+  const dropdownStyle: CSSProperties = {
+    position: 'absolute',
+    bottom: '100%',
+    left: 10,
+    right: 10,
+    background: 'var(--s2)',
+    border: '1px solid var(--bd2)',
+    borderRadius: 'var(--r)',
+    overflow: 'hidden',
+    zIndex: 100,
+    boxShadow: '0 -8px 24px rgba(0,0,0,.4)',
+  };
+
+  const dropdownItemStyle: CSSProperties = {
+    display: 'block',
+    width: '100%',
+    padding: '10px 14px',
+    background: 'none',
+    border: 'none',
+    color: 'var(--t2)',
+    fontFamily: 'var(--head)',
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+    transition: 'background .1s',
+  };
+
+  const topbarTitleStyle: CSSProperties = {
+    fontFamily: 'var(--head)',
+    fontSize: 16,
+    fontWeight: 700,
+    color: 'var(--t1)',
+  };
+
+  const searchStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  };
+
+  const searchInputStyle: CSSProperties = {
+    padding: '7px 14px',
+    background: 'var(--s2)',
+    border: '1px solid var(--bd)',
+    borderRadius: 20,
+    color: 'var(--t2)',
+    fontSize: 13,
+    outline: 'none',
+    width: 200,
+    fontFamily: 'var(--head)',
+    transition: 'border-color .15s',
+  };
+
+  const pillStyle = (ok: boolean): CSSProperties => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '4px 10px',
+    borderRadius: 12,
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: 'var(--head)',
+    background: ok ? 'var(--ok2)' : 'rgba(96,96,122,.1)',
+    color: ok ? 'var(--ok)' : 'var(--t3)',
+    border: `1px solid ${ok ? 'rgba(16,185,129,.2)' : 'var(--bd)'}`,
+  });
+
+  const demoBannerStyle: CSSProperties = {
+    background: 'rgba(245,158,11,.08)',
+    borderBottom: '1px solid rgba(245,158,11,.2)',
+    padding: '6px 24px',
+    fontSize: 12,
+    fontWeight: 500,
+    color: 'var(--warn)',
+    textAlign: 'center' as const,
+    flexShrink: 0,
+  };
+
+  const getBadge = (id: AppTab) => {
+    if (id === 'posts' && postCount > 0) return postCount;
+    if (id === 'schedule' && scheduledCount > 0) return scheduledCount;
+    if (id === 'ideas' && ideasCount > 0) return ideasCount;
+    return null;
+  };
+
+  return (
+    <div style={rootStyle}>
+      {/* Sidebar */}
+      <aside style={sidebarStyle}>
+        <div style={logoStyle}>
+          <div style={logoIconStyle}>P</div>
+          <span style={logoTextStyle}>PostPilot</span>
+        </div>
+
+        <nav style={navStyle}>
+          {NAV_ITEMS.map(item => {
+            const badge = getBadge(item.id);
+            return (
+              <button
+                key={item.id}
+                style={navItemStyle(currentTab === item.id)}
+                onClick={() => onTabChange(item.id)}
+                onMouseEnter={e => {
+                  if (currentTab !== item.id) {
+                    e.currentTarget.style.background = 'var(--s2)';
+                    e.currentTarget.style.color = 'var(--t2)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (currentTab !== item.id) {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.color = 'var(--t3)';
+                  }
+                }}
+              >
+                <span style={navIconStyle}>{item.icon}</span>
+                {item.label}
+                {badge !== null && <span style={badgeStyle}>{badge}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div style={profileSectionStyle}>
+          {profileOpen && (
+            <div style={dropdownStyle}>
+              <button
+                style={dropdownItemStyle}
+                onClick={() => { onTabChange('settings'); setProfileOpen(false); }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--s3)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                Settings
+              </button>
+              <button
+                style={{ ...dropdownItemStyle, color: 'var(--err)' }}
+                onClick={handleLogout}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,.1)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
+          <button
+            style={profileBtnStyle}
+            onClick={() => setProfileOpen(o => !o)}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--s2)'; e.currentTarget.style.borderColor = 'var(--bd)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'transparent'; }}
+          >
+            <div style={avatarStyle}>
+              {user.picture
+                ? <img src={user.picture} alt={user.name} width={30} height={30} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+                : user.name.charAt(0).toUpperCase()
+              }
+            </div>
+            <div>
+              <div style={userNameStyle}>{user.name}</div>
+              <div style={userEmailStyle}>{user.email}</div>
+            </div>
+            <span style={{ marginLeft: 'auto', color: 'var(--t3)', fontSize: 10 }}>▴</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div style={mainStyle}>
+        {demoMode && (
+          <div style={demoBannerStyle}>
+            Demo mode — data is not saved. Sign in for the full experience.
+          </div>
+        )}
+
+        <header style={topbarStyle}>
+          <span style={topbarTitleStyle}>{TAB_TITLES[currentTab]}</span>
+          <div style={searchStyle}>
+            <input
+              style={searchInputStyle}
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onFocus={e => (e.target.style.borderColor = 'var(--ac)')}
+              onBlur={e => (e.target.style.borderColor = 'var(--bd)')}
+            />
+            <div style={pillStyle(!!hasApiKey)}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: hasApiKey ? 'var(--ok)' : 'var(--t3)', display: 'inline-block' }} />
+              AI {hasApiKey ? 'on' : 'off'}
+            </div>
+            <div style={pillStyle(!!hasLinkedIn)}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: hasLinkedIn ? 'var(--li)' : 'var(--t3)', display: 'inline-block' }} />
+              LI {hasLinkedIn ? 'linked' : 'unlinked'}
+            </div>
+          </div>
+        </header>
+
+        <div style={contentStyle}>
+          {currentTab === 'posts' && (
+            <PostsView user={user} prefs={prefs ?? null} search={search} demoMode={demoMode} />
+          )}
+          {currentTab === 'schedule' && (
+            <ScheduleView user={user} demoMode={demoMode} />
+          )}
+          {currentTab === 'calendar' && (
+            <CalendarView user={user} demoMode={demoMode} />
+          )}
+          {currentTab === 'news' && (
+            <NewsView user={user} prefs={prefs ?? null} demoMode={demoMode} />
+          )}
+          {currentTab === 'ideas' && (
+            <IdeasView user={user} demoMode={demoMode} />
+          )}
+          {currentTab === 'settings' && (
+            <SettingsView user={user} prefs={prefs ?? null} demoMode={demoMode} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
