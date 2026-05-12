@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PostPilot — AI LinkedIn Posts</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236b4fff'/%3E%3Ctext x='16' y='23' font-family='system-ui,sans-serif' font-size='20' font-weight='800' text-anchor='middle' fill='white'%3EP%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <script>(function(){var t=localStorage.getItem('pp_theme')||'dark';document.documentElement.setAttribute('data-theme',t)})();</script>
 <style>
@@ -2044,19 +2045,20 @@ function handleGoogleCredential(response) {
   try {
     const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
     const { name, email, picture, sub } = payload;
+    isDemo = false;
     USER = { name, email, picture, sub };
     saveSync('user', USER);
     saveSync('user_' + email, USER);
     PREFS = loadSync('prefs_' + email, { name });
     if (!PREFS.name) { showView('v-onboard'); } else { loadAppState(); showView('v-app'); updateAppUI(); renderPosts(); }
-    toast('🎉 ' + t('toast.welcome') + name + '!', 'ok');
+    toast('🎉 ' + name + '!', 'ok');
   } catch(e) { toast('Google sign-in failed', 'err'); }
 }
 
 function doLogin() {
   const email = document.getElementById('login-email').value.trim();
-  const pass = document.getElementById('login-pass').value;
   if (!email) { toast(t('toast.fill.email'), 'err'); return; }
+  isDemo = false;
   USER = loadSync('user_'+email, null);
   if (!USER) { toast(t('toast.user.notfound'), 'err'); return; }
   saveSync('user', USER);
@@ -2064,8 +2066,9 @@ function doLogin() {
   if (!PREFS.name) { showView('v-onboard'); } else { loadAppState(); showView('v-app'); updateAppUI(); renderPosts(); }
 }
 function demoLogin() {
-  USER = { name: 'Danil Gorbunov', email: 'demo@postpilot.ai' };
-  PREFS = { name:'Danil Gorbunov', role:'Product Designer + AI Builder', location:'Bratislava', bio:'Solo builder який будує AI-продукти від дизайну до деплою.', projects:'Fonitix — AI-агент для ресторанів\nvocab-app — SM-2 flashcard система\nAI Lab — Claude Code environment', stack:'Claude Code, Cursor, Next.js, Supabase, Vercel', audience:'Product designers, AI builders', tone:'friendly', lang:'uk', apikey:'', length:'mix', avoid:'хайп без фактів', linkedin:'https://linkedin.com/in/danilgorbunov', site:'https://danilgorbunov.com' };
+  isDemo = true;
+  USER = { name: 'Demo User', email: 'demo@postpilot.ai' };
+  PREFS = { name:'Demo User', role:'Product Designer + AI Builder', location:'', bio:'', projects:'', stack:'', audience:'Product designers, AI builders', tone:'friendly', lang:'en', apikey:'', length:'mix', avoid:'', linkedin:'', site:'' };
   saveSync('user', USER);
   loadAppState(); showView('v-app'); updateAppUI(); renderPosts();
   toast(t('toast.welcome.demo'), 'ok');
@@ -2074,6 +2077,7 @@ function doRegister() {
   const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   if (!name || !email) { toast(t('toast.fill.fields'), 'err'); return; }
+  isDemo = false;
   USER = { name, email };
   saveSync('user', USER);
   saveSync('user_'+email, USER);
@@ -2092,7 +2096,8 @@ function closeProfileMenu() { Q('#sp-menu')?.classList.remove('open'); }
 
 function doLogout() {
   saveSync('user', null);
-  USER = null; PREFS = {};
+  USER = null; PREFS = {}; isDemo = false; userPosts = [];
+  deletedIds = new Set(); scheduled = []; newsPosts = [];
   showView('v-landing');
   toast(t('toast.logout'));
 }
@@ -2226,15 +2231,16 @@ function switchTab(name, el) {
 
 // ── POSTS ─────────────────────────────────────────────────────────────────────
 function renderPosts() {
+  const src = isDemo ? P : userPosts;
   const q = (Q('#app-search')?.value || '').toLowerCase();
-  const vis = P.filter((p, i) => {
+  const vis = src.filter((p, i) => {
     if (deletedIds.has(i)) return false;
     if (selTone !== 'all' && p.t !== selTone) return false;
     if (q && !p.x.toLowerCase().includes(q) && !p.a.toLowerCase().includes(q)) return false;
     return true;
   });
   Q('#posts-grid').innerHTML = vis.map(p => {
-    const i = P.indexOf(p);
+    const i = src.indexOf(p);
     const isSch = scheduled.some(s => s.id === i);
     return `<div class="post-card" id="pc${i}">
       <div class="card-head">
@@ -2263,7 +2269,8 @@ function filt(t, el) {
 }
 
 function updateBadges() {
-  const vis = P.filter((_,i) => !deletedIds.has(i)).length;
+  const src = isDemo ? P : userPosts;
+  const vis = src.filter((_,i) => !deletedIds.has(i)).length;
   Q('#nb-posts').textContent = vis;
   Q('#nb-sch').textContent = scheduled.length;
   Q('#nb-del').textContent = deletedIds.size;
@@ -2274,8 +2281,8 @@ function updateBadges() {
 function delPost(i) {
   deletedIds.add(i);
   scheduled = scheduled.filter(s => s.id !== i);
-  saveSync('deleted', [...deletedIds]);
-  saveSync('scheduled', scheduled);
+  saveSync(stateKey('deleted'), [...deletedIds]);
+  saveSync(stateKey('scheduled'), scheduled);
   const card = Q('#pc' + i);
   if (card) { card.style.opacity = '0'; card.style.transition = 'opacity .2s'; }
   setTimeout(() => renderPosts(), 220);
@@ -2287,7 +2294,7 @@ function schedPost(i) {
   const idx = scheduled.findIndex(s => s.id === i);
   if (idx >= 0) {
     scheduled.splice(idx, 1);
-    saveSync('scheduled', scheduled);
+    saveSync(stateKey('scheduled'), scheduled);
     renderPosts();
     toast(t('toast.post.unscheduled', { n: i+1 }));
     return;
@@ -2296,18 +2303,19 @@ function schedPost(i) {
   const locale = uiLang === 'uk' ? 'uk-UA' : 'en-US';
   const dateStr = tom.toLocaleDateString(locale, { weekday:'short', day:'numeric', month:'long' });
   scheduled.push({ id: i, date: dateStr, ts: tom.toISOString() });
-  saveSync('scheduled', scheduled);
+  saveSync(stateKey('scheduled'), scheduled);
   renderPosts();
   toast(t('toast.post.scheduled', { n: i+1, date: dateStr }), 'ok');
 }
 
 function copyPost(i) {
-  navigator.clipboard.writeText(P[i].x).then(() => {
+  const src = isDemo ? P : userPosts;
+  navigator.clipboard.writeText(src[i].x).then(() => {
     const card = Q('#pc' + i);
     if (card) { card.classList.add('copied'); setTimeout(() => card.classList.remove('copied'), 2000); }
     toast(t('toast.post.copied', { n: i+1 }), 'ok');
     if (PREFS.litoken) {
-      publishToLinkedIn(P[i].x);
+      publishToLinkedIn(src[i].x);
     } else {
       setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 700);
     }
@@ -2315,26 +2323,28 @@ function copyPost(i) {
 }
 
 function renderScheduled() {
+  const src = isDemo ? P : userPosts;
   const el = Q('#sch-wrap');
   if (!scheduled.length) { el.innerHTML = `<div class="empty-state"><span class="empty-icon">📅</span>${t('sch.empty').replace('\n','<br>')}</div>`; return; }
   el.innerHTML = scheduled.map((s, si) => {
-    const p = P[s.id]; if (!p) return '';
+    const p = src[s.id]; if (!p) return '';
     return `<div class="sch-card">
       <div class="sch-when"><div class="sch-when-lbl">${t('sch.tomorrow.lbl')}</div><div class="sch-when-day">${s.date}</div><div class="tone-tag t-${p.t}" style="display:inline-block;margin-top:8px">${p.t}</div></div>
       <div class="sch-text" id="scht${si}" onclick="this.classList.toggle('expanded')">${esc(p.x)}</div>
       <div class="sch-actions">
-        <button class="btn-sch-copy" onclick="navigator.clipboard.writeText(P[${s.id}].x).then(()=>toast(t('toast.copied'),'ok'))">Copy</button>
-        <button class="btn-sch-rem" onclick="scheduled.splice(${si},1);saveSync('scheduled',scheduled);updateBadges();renderScheduled();toast(t('toast.removed'))">✕</button>
+        <button class="btn-sch-copy" onclick="navigator.clipboard.writeText((isDemo?P:userPosts)[${s.id}].x).then(()=>toast(t('toast.copied'),'ok'))">Copy</button>
+        <button class="btn-sch-rem" onclick="scheduled.splice(${si},1);saveSync(stateKey('scheduled'),scheduled);updateBadges();renderScheduled();toast(t('toast.removed'))">✕</button>
       </div>
     </div>`;
   }).join('');
 }
 
 function renderDeleted() {
+  const src = isDemo ? P : userPosts;
   const el = Q('#del-grid');
   if (!deletedIds.size) { el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🗑</span>${t('del.empty')}</div>`; return; }
   el.innerHTML = [...deletedIds].map(i => {
-    const p = P[i]; if (!p) return '';
+    const p = src[i]; if (!p) return '';
     return `<div class="post-card del-card" style="opacity:.4">
       <div class="card-head"><span class="card-num">${i+1}</span><span class="tone-tag t-${p.t}">${p.t}</span><span class="card-angle">${p.a}</span></div>
       <div class="card-body">${esc(p.x)}</div>
@@ -2345,18 +2355,19 @@ function renderDeleted() {
 
 function restorePost(i) {
   deletedIds.delete(i);
-  saveSync('deleted', [...deletedIds]);
+  saveSync(stateKey('deleted'), [...deletedIds]);
   updateBadges(); renderDeleted(); renderPosts();
   toast(t('toast.post.restored', { n: i+1 }), 'ok');
 }
 
 // ── TODAY PANEL ───────────────────────────────────────────────────────────────
 function showTodayPanel() {
-  const avail = P.map((_,i) => i).filter(i => !deletedIds.has(i));
+  const src = isDemo ? P : userPosts;
+  const avail = src.map((_,i) => i).filter(i => !deletedIds.has(i));
   if (!avail.length) { toast(t('toast.no.posts')); return; }
   todayIdx = todayIdx % avail.length;
   const idx = avail[todayIdx];
-  const p = P[idx];
+  const p = src[idx];
   const todayLocale = uiLang === 'uk' ? 'uk-UA' : 'en-US';
   const today = new Date().toLocaleDateString(todayLocale, { weekday:'long', day:'numeric', month:'long' });
   Q('#today-date').textContent = today;
@@ -2375,8 +2386,9 @@ function toggleToday() {
 }
 
 function publishToday() {
+  const src = isDemo ? P : userPosts;
   const idx = parseInt(Q('#today-panel').dataset.idx || '0');
-  navigator.clipboard.writeText(P[idx].x).then(() => {
+  navigator.clipboard.writeText(src[idx].x).then(() => {
     toast(t('toast.linkedin.open'), 'ok');
     Q('#today-panel').style.display = 'none';
     setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 700);
@@ -2384,7 +2396,8 @@ function publishToday() {
 }
 
 function skipToday() {
-  const avail = P.map((_,i) => i).filter(i => !deletedIds.has(i));
+  const src = isDemo ? P : userPosts;
+  const avail = src.map((_,i) => i).filter(i => !deletedIds.has(i));
   todayIdx = (todayIdx + 1) % Math.max(avail.length, 1);
   showTodayPanel();
 }
@@ -2550,11 +2563,15 @@ function copyNews(i) {
 function saveNewsPost(i) {
   const el = document.getElementById('nb'+i); if(!el) return;
   const text = el.textContent;
-  const newId = P.length + newsPosts.length + Date.now();
-  // Add to main list as a temporary post (stored in session)
-  P.push({ t: 'insight', a: 'з новин', x: text });
-  updateBadges(); render();
-  toast('✓ Збережено до списку "Всі пости"');
+  const post = { t: 'insight', a: 'from news', x: text };
+  if (isDemo) {
+    P.push(post);
+  } else {
+    userPosts.push(post);
+    saveSync(stateKey('posts'), userPosts);
+  }
+  updateBadges(); renderPosts();
+  toast(t('toast.saved.tolist'), 'ok');
 }
 
 async function downloadImg(url, name) {
@@ -2622,7 +2639,7 @@ ${PREFS.avoid ? 'Уникати: ' + PREFS.avoid : ''}
       return { ...p, imgUrl: img.url, imgAlt: img.alt };
     }));
     newsPosts = [...withImgs, ...newsPosts];
-    saveSync('newsposts', newsPosts.slice(0, 50));
+    saveSync(stateKey('newsposts'), newsPosts.slice(0, 50));
     updateBadges();
     renderNewsGrid(withImgs, grid);
     toast(t('toast.news.ready', { n: withImgs.length }), 'ok');
@@ -2672,8 +2689,9 @@ function copyNews(i) {
 }
 
 function saveNewsPost(i) {
-  const el = Q('#nbt' + i); if (!el) return;
-  P.push({ t: 'insight', a: 'з новин', x: el.textContent });
+  const el = Q('#nbt' + i) || document.getElementById('nb'+i); if (!el) return;
+  const post = { t: 'insight', a: 'from news', x: el.textContent };
+  if (isDemo) { P.push(post); } else { userPosts.push(post); saveSync(stateKey('posts'), userPosts); }
   updateBadges(); renderPosts();
   toast(t('toast.saved.tolist'), 'ok');
 }
