@@ -62,7 +62,7 @@ Write in ${lang}.
 Return ONLY a valid JSON array of objects with exactly these keys: "tone", "angle", "content".
 No markdown, no code fences, no explanation — just the raw JSON array.`;
 
-    const userMessage = `Create ${count} LinkedIn posts for this person:
+    const buildMessage = (n: number) => `Create ${n} LinkedIn posts for this person:
 Name: ${profile.name ?? "Unknown"}
 Role: ${profile.role ?? "Professional"}
 Bio: ${profile.bio ?? ""}
@@ -80,26 +80,31 @@ Each post should:
 - End with 3-5 relevant hashtags on a new line
 - Feel authentic and human, not corporate
 
-Return a JSON array with ${count} posts, each having:
+Return a JSON array with ${n} posts, each having:
 - "tone": exactly one of: "builder", "insight", "story", "opinion", "tactical"
 - "angle": a brief description of the angle/topic (1 sentence, no underscores)
 - "content": the full post text including hashtags at the end`;
 
-    const raw = await callClaude(apiKey, systemPrompt, userMessage, 4096);
-
-    let posts: Array<{ tone: string; angle: string; content: string }>;
-    try {
-      posts = JSON.parse(raw);
-    } catch {
-      // Attempt to extract JSON array from response
-      const match = raw.match(/\[[\s\S]*\]/);
-      if (!match) {
-        throw new Error("Failed to parse posts from Claude response");
+    const parseRaw = (raw: string): Array<{ tone: string; angle: string; content: string }> => {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        const match = raw.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error("Failed to parse posts from Claude response");
+        return JSON.parse(match[0]);
       }
-      posts = JSON.parse(match[0]);
+    };
+
+    const BATCH = 6;
+    const allPosts: Array<{ tone: string; angle: string; content: string }> = [];
+
+    for (let i = 0; i < count; i += BATCH) {
+      const batchSize = Math.min(BATCH, count - i);
+      const raw = await callClaude(apiKey, systemPrompt, buildMessage(batchSize), 8192);
+      allPosts.push(...parseRaw(raw));
     }
 
-    return posts;
+    return allPosts;
   },
 });
 
