@@ -204,7 +204,8 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 
 /* sidebar */
 .sidebar{background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden}
-.sidebar-brand{padding:16px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px}
+.sidebar-brand{padding:16px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s;text-decoration:none;color:inherit}
+.sidebar-brand:hover{background:var(--s2)}
 .brand-logo{font-family:var(--head);font-size:16px;font-weight:900}
 .brand-logo em{color:var(--ac);font-style:normal}
 .brand-user{font-size:10px;color:var(--t3);margin-top:1px}
@@ -625,7 +626,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 
     <!-- SIDEBAR -->
     <div class="sidebar">
-      <div class="sidebar-brand">
+      <div class="sidebar-brand" onclick="showView('v-landing')" title="Go to home">
         <div>
           <div class="brand-logo">Post<em>Pilot</em></div>
           <div class="brand-user" id="sb-user-name" data-i18n="app.loading">Loading...</div>
