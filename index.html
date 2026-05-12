@@ -496,87 +496,87 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
     <div class="onboard-card">
       <!-- Step 1: About -->
       <div class="onboard-step active" id="os-1">
-        <div class="step-title">Хто ти і чим займаєшся?</div>
-        <div class="step-desc">Це основа для всіх постів — Claude буде писати від твого імені, тому важливо розуміти контекст.</div>
+        <div class="step-title" data-i18n="ob.step1.title">Who are you and what do you do?</div>
+        <div class="step-desc" data-i18n="ob.step1.desc">This is the foundation for all posts — Claude will write on your behalf, so understanding the context is important.</div>
         <div class="frow-2">
-          <div class="frow"><label>Ім'я</label><input id="ob-name" placeholder="Danil Gorbunov"></div>
-          <div class="frow"><label>Посада / роль</label><input id="ob-role" placeholder="Product Designer + AI Builder"></div>
+          <div class="frow"><label data-i18n="ob.label.name">Name</label><input id="ob-name" placeholder="Danil Gorbunov"></div>
+          <div class="frow"><label data-i18n="ob.label.role">Position / role</label><input id="ob-role" placeholder="Product Designer + AI Builder"></div>
         </div>
-        <div class="frow"><label>Місто / країна</label><input id="ob-location" placeholder="Братислава, Словаччина"></div>
-        <div class="frow"><label>Коротко про тебе (2-3 речення)</label><textarea id="ob-bio" placeholder="Product Designer і solo-builder. Будую AI-продукти самостійно — від дизайну до деплою. Зараз: Fonitix (SaaS для ресторанів), vocab-app, AI Lab."></textarea></div>
-        <div class="frow"><label>Ключові досягнення або факти</label><input id="ob-facts" placeholder="Перший клієнт за 6 днів, 1.7M токенів за 4 дні, solo SaaS..."></div>
+        <div class="frow"><label data-i18n="ob.label.location">City / Country</label><input id="ob-location" placeholder="Bratislava, Slovakia"></div>
+        <div class="frow"><label data-i18n="ob.label.bio">Brief about you (2-3 sentences)</label><textarea id="ob-bio" placeholder="Product Designer and solo-builder. Building AI products independently. Now: Fonitix, vocab-app, AI Lab."></textarea></div>
+        <div class="frow"><label data-i18n="ob.label.facts">Key achievements or facts</label><input id="ob-facts" placeholder="First client in 6 days, 1.7M tokens in 4 days, solo SaaS..."></div>
       </div>
 
       <!-- Step 2: Projects -->
       <div class="onboard-step" id="os-2">
-        <div class="step-title">Твої проекти і стек</div>
-        <div class="step-desc">Що ти будуєш? Чим більше деталей — тим конкретніші і цікавіші пости.</div>
-        <div class="frow"><label>Поточні проекти (назва, що робить, стек)</label><textarea id="ob-projects" placeholder="Fonitix — AI-агент для ресторанів, відповідає на дзвінки 24/7. Стек: Next.js, Supabase, GPT-4o, Telnyx, Deepgram, Stripe.&#10;vocab-app — вивчення мов через SM-2 алгоритм. Стек: Next.js, localStorage.&#10;AI Lab — локальне середовище для Claude Code."></textarea></div>
-        <div class="frow"><label>Улюблені інструменти / стек</label><input id="ob-stack" placeholder="Claude Code, Cursor, Next.js, Supabase, Vercel, Figma"></div>
-        <div class="frow"><label>Аудиторія твоїх постів</label><input id="ob-audience" placeholder="Product designers, AI builders, solo founders, дизайнери-ентузіасти"></div>
-        <div class="frow"><label>Теми які тебе цікавлять</label>
+        <div class="step-title" data-i18n="ob.step2.title">Your projects and stack</div>
+        <div class="step-desc" data-i18n="ob.step2.desc">What do you build? More details — more specific and interesting posts.</div>
+        <div class="frow"><label data-i18n="ob.label.projects">Current projects (name, what it does, stack)</label><textarea id="ob-projects" placeholder="Fonitix — AI agent for restaurants, answers calls 24/7. Stack: Next.js, Supabase, GPT-4o."></textarea></div>
+        <div class="frow"><label data-i18n="ob.label.stack">Favorite tools / stack</label><input id="ob-stack" placeholder="Claude Code, Cursor, Next.js, Supabase, Vercel, Figma"></div>
+        <div class="frow"><label data-i18n="ob.label.audience">Your post audience</label><input id="ob-audience" placeholder="Product designers, AI builders, solo founders"></div>
+        <div class="frow"><label data-i18n="ob.label.topics">Topics you're interested in</label>
           <div class="topic-grid">
-            <div class="topic-item" onclick="toggleTopic(this)">AI інструменти</div>
-            <div class="topic-item" onclick="toggleTopic(this)">Product Design</div>
-            <div class="topic-item" onclick="toggleTopic(this)">SaaS / Startup</div>
-            <div class="topic-item" onclick="toggleTopic(this)">Claude Code</div>
-            <div class="topic-item" onclick="toggleTopic(this)">UX та дослідження</div>
-            <div class="topic-item" onclick="toggleTopic(this)">Design Systems</div>
-            <div class="topic-item" onclick="toggleTopic(this)">Технічна архітектура</div>
-            <div class="topic-item" onclick="toggleTopic(this)">Solo building</div>
-            <div class="topic-item" onclick="toggleTopic(this)">Продуктивність</div>
+            <div class="topic-item" data-i18n="ob.topic.ai" onclick="toggleTopic(this)">AI Tools</div>
+            <div class="topic-item" data-i18n="ob.topic.design" onclick="toggleTopic(this)">Product Design</div>
+            <div class="topic-item" data-i18n="ob.topic.saas" onclick="toggleTopic(this)">SaaS / Startup</div>
+            <div class="topic-item" data-i18n="ob.topic.claude" onclick="toggleTopic(this)">Claude Code</div>
+            <div class="topic-item" data-i18n="ob.topic.ux" onclick="toggleTopic(this)">UX &amp; Research</div>
+            <div class="topic-item" data-i18n="ob.topic.ds" onclick="toggleTopic(this)">Design Systems</div>
+            <div class="topic-item" data-i18n="ob.topic.arch" onclick="toggleTopic(this)">Tech Architecture</div>
+            <div class="topic-item" data-i18n="ob.topic.solo" onclick="toggleTopic(this)">Solo building</div>
+            <div class="topic-item" data-i18n="ob.topic.prod" onclick="toggleTopic(this)">Productivity</div>
           </div>
         </div>
       </div>
 
       <!-- Step 3: Style -->
       <div class="onboard-step" id="os-3">
-        <div class="step-title">Стиль і тон постів</div>
-        <div class="step-desc">Як ти хочеш звучати? Це визначить характер всіх постів.</div>
-        <div class="frow"><label>Основний тон</label>
+        <div class="step-title" data-i18n="ob.step3.title">Style and tone of posts</div>
+        <div class="step-desc" data-i18n="ob.step3.desc">How do you want to sound? This defines the character of all posts.</div>
+        <div class="frow"><label data-i18n="ob.label.tone">Main tone</label>
           <div class="tone-chips">
-            <button class="tone-chip" onclick="toggleTone(this,'professional')">Професійний</button>
-            <button class="tone-chip on" onclick="toggleTone(this,'friendly')">Дружній</button>
-            <button class="tone-chip" onclick="toggleTone(this,'expert')">Експертний</button>
-            <button class="tone-chip" onclick="toggleTone(this,'storyteller')">Сторітеллер</button>
-            <button class="tone-chip" onclick="toggleTone(this,'provocative')">Провокаційний</button>
+            <button class="tone-chip" onclick="toggleTone(this,'professional')" data-i18n="ob.tone.professional">Professional</button>
+            <button class="tone-chip on" onclick="toggleTone(this,'friendly')" data-i18n="ob.tone.friendly">Friendly</button>
+            <button class="tone-chip" onclick="toggleTone(this,'expert')" data-i18n="ob.tone.expert">Expert</button>
+            <button class="tone-chip" onclick="toggleTone(this,'storyteller')" data-i18n="ob.tone.storyteller">Storyteller</button>
+            <button class="tone-chip" onclick="toggleTone(this,'provocative')" data-i18n="ob.tone.provocative">Provocative</button>
           </div>
         </div>
-        <div class="frow"><label>Мова постів</label>
+        <div class="frow"><label data-i18n="ob.label.postlang">Post language</label>
           <div class="tone-chips">
-            <button class="tone-chip on" onclick="toggleLang(this,'uk')">🇺🇦 Українська</button>
-            <button class="tone-chip" onclick="toggleLang(this,'en')">🇬🇧 English</button>
+            <button class="tone-chip on" data-lang onclick="toggleLang(this,'uk')">🇺🇦 Українська</button>
+            <button class="tone-chip" data-lang onclick="toggleLang(this,'en')">🇬🇧 English</button>
           </div>
         </div>
-        <div class="frow"><label>Довжина яку ти надаєш перевагу</label>
+        <div class="frow"><label data-i18n="ob.label.length">Preferred length</label>
           <select id="ob-length">
-            <option value="mix">Мікс — короткі і довгі</option>
-            <option value="short">Переважно короткі (до 400 симв)</option>
-            <option value="long">Переважно довгі (600-1000 симв)</option>
+            <option value="mix" data-i18n="ob.len.mix">Mix — short and long</option>
+            <option value="short" data-i18n="ob.len.short">Mostly short (up to 400 chars)</option>
+            <option value="long" data-i18n="ob.len.long">Mostly long (600-1000 chars)</option>
           </select>
         </div>
-        <div class="frow"><label>Що ти ніколи не пишеш у постах</label><input id="ob-avoid" placeholder="хайп без фактів, motivational quotes, clickbait заголовки..."></div>
-        <div class="frow"><label>Приклад поста в твоєму стилі (якщо є)</label><textarea id="ob-example" placeholder="Вставте будь-який свій старий пост — і система навчиться вашому стилю ще точніше"></textarea></div>
+        <div class="frow"><label data-i18n="ob.label.avoid">What you never write in posts</label><input id="ob-avoid" placeholder="hype without facts, motivational quotes, clickbait..."></div>
+        <div class="frow"><label data-i18n="ob.label.example">Example post in your style (if any)</label><textarea id="ob-example" placeholder="Paste any old post — and the system will learn your style even more accurately"></textarea></div>
       </div>
 
       <!-- Step 4: LinkedIn + API -->
       <div class="onboard-step" id="os-4">
-        <div class="step-title">LinkedIn і налаштування</div>
-        <div class="step-desc">Останній крок. LinkedIn URL для персоналізації, API key для AI генерації.</div>
-        <div class="frow"><label>LinkedIn URL</label><input id="ob-linkedin" placeholder="https://linkedin.com/in/danilgorbunov"></div>
-        <div class="frow"><label>Сайт або портфоліо</label><input id="ob-site" placeholder="https://danilgorbunov.com"></div>
-        <div class="frow"><label>Anthropic API Key <span style="color:var(--ok)">*обов'язково для AI</span></label><input type="password" id="ob-apikey" placeholder="sk-ant-...">
-          <div class="frow-hint">Потрібен для генерації постів і новин. Безкоштовний tier: console.anthropic.com</div>
+        <div class="step-title" data-i18n="ob.step4.title">LinkedIn and settings</div>
+        <div class="step-desc" data-i18n="ob.step4.desc">Last step. LinkedIn URL for personalization, API key for AI generation.</div>
+        <div class="frow"><label data-i18n="ob.label.linkedin">LinkedIn URL</label><input id="ob-linkedin" placeholder="https://linkedin.com/in/danilgorbunov"></div>
+        <div class="frow"><label data-i18n="ob.label.site">Website or portfolio</label><input id="ob-site" placeholder="https://danilgorbunov.com"></div>
+        <div class="frow"><label data-i18n="ob.label.apikey">Anthropic API Key <span style="color:var(--ok)">*required for AI</span></label><input type="password" id="ob-apikey" placeholder="sk-ant-...">
+          <div class="frow-hint" data-i18n="ob.apikey.hint">Needed for generating posts and news. Free tier: console.anthropic.com</div>
         </div>
-        <div class="frow"><label>LinkedIn Access Token (опційно)</label><input type="password" id="ob-litoken" placeholder="Залиш порожнім — пости копіюватимуться в буфер">
-          <div class="frow-hint">Для прямої публікації без копіювання. developer.linkedin.com → Create App</div>
+        <div class="frow"><label data-i18n="ob.label.litoken">LinkedIn Access Token (optional)</label><input type="password" id="ob-litoken" placeholder="Leave empty — posts will be copied to clipboard">
+          <div class="frow-hint" data-i18n="ob.litoken.hint">For direct publishing without copying. developer.linkedin.com → Create App</div>
         </div>
       </div>
 
       <div class="onboard-nav">
-        <button class="btn-back" id="ob-back-btn" onclick="obBack()" style="visibility:hidden">← Назад</button>
-        <span style="font-size:10px;color:var(--t3)" id="ob-step-indicator">Крок 1 з 4</span>
-        <button class="btn-next" id="ob-next-btn" onclick="obNext()">Далі →</button>
+        <button class="btn-back" id="ob-back-btn" onclick="obBack()" style="visibility:hidden" data-i18n="ob.back">← Back</button>
+        <span style="font-size:10px;color:var(--t3)" id="ob-step-indicator">Step 1 of 4</span>
+        <button class="btn-next" id="ob-next-btn" onclick="obNext()" data-i18n="ob.next">Next →</button>
       </div>
     </div>
   </div>
@@ -595,19 +595,19 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
         </div>
       </div>
       <div class="sidebar-nav">
-        <div class="nav-section-lbl">Контент</div>
-        <div class="nav-item on" onclick="switchTab('posts',this)"><span class="ni">✦</span> Всі пости <span class="nav-badge" id="nb-posts">50</span></div>
-        <div class="nav-item" onclick="switchTab('scheduled',this)"><span class="ni">📅</span> Заплановані <span class="nav-badge" id="nb-sch" style="background:var(--warn)">0</span></div>
-        <div class="nav-item" onclick="switchTab('news',this)"><span class="ni">📰</span> З новин <span class="nav-badge" id="nb-news" style="background:var(--ok)">0</span></div>
-        <div class="nav-item" onclick="switchTab('deleted',this)"><span class="ni">🗑</span> Видалені <span class="nav-badge" id="nb-del" style="background:var(--s3);color:var(--t3)">0</span></div>
-        <div class="nav-section-lbl" style="margin-top:12px">Аккаунт</div>
-        <div class="nav-item" onclick="switchTab('settings',this)"><span class="ni">⚙</span> Налаштування</div>
+        <div class="nav-section-lbl" data-i18n="app.section.content">Content</div>
+        <div class="nav-item on" onclick="switchTab('posts',this)"><span class="ni">✦</span> <span data-i18n="app.nav.posts">All posts</span> <span class="nav-badge" id="nb-posts">50</span></div>
+        <div class="nav-item" onclick="switchTab('scheduled',this)"><span class="ni">📅</span> <span data-i18n="app.nav.scheduled">Scheduled</span> <span class="nav-badge" id="nb-sch" style="background:var(--warn)">0</span></div>
+        <div class="nav-item" onclick="switchTab('news',this)"><span class="ni">📰</span> <span data-i18n="app.nav.news">From news</span> <span class="nav-badge" id="nb-news" style="background:var(--ok)">0</span></div>
+        <div class="nav-item" onclick="switchTab('deleted',this)"><span class="ni">🗑</span> <span data-i18n="app.nav.deleted">Deleted</span> <span class="nav-badge" id="nb-del" style="background:var(--s3);color:var(--t3)">0</span></div>
+        <div class="nav-section-lbl" style="margin-top:12px" data-i18n="app.section.account">Account</div>
+        <div class="nav-item" onclick="switchTab('settings',this)"><span class="ni">⚙</span> <span data-i18n="app.nav.settings">Settings</span></div>
       </div>
       <div class="sidebar-footer">
         <div class="sidebar-profile">
           <div class="sp-av" id="sp-av">D</div>
           <div><div class="sp-name" id="sp-name">Danil</div><div class="sp-email" id="sp-email">...</div></div>
-          <div class="sp-logout" onclick="doLogout()" title="Вийти">↗</div>
+          <div class="sp-logout" onclick="doLogout()" data-i18n-title="app.logout.title" title="Log out">↗</div>
         </div>
       </div>
     </div>
@@ -615,10 +615,10 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
     <!-- MAIN -->
     <div class="main-area">
       <div class="app-topbar">
-        <div class="app-topbar-title" id="topbar-title">Всі пости</div>
+        <div class="app-topbar-title" id="topbar-title" data-i18n="app.nav.posts">All posts</div>
         <div class="search-wrap">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input class="search-input" id="app-search" placeholder="пошук..." oninput="renderPosts()">
+          <input class="search-input" id="app-search" data-i18n-ph="app.search.ph" placeholder="search..." oninput="renderPosts()">
         </div>
         <div class="topbar-right">
           <div class="tb-pill" id="api-pill" style="border-color:var(--t3);color:var(--t3)">no key</div>
@@ -628,15 +628,15 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 
       <!-- filters (posts tab only) -->
       <div class="filter-bar" id="filter-bar">
-        <span class="flbl">тон</span>
-        <button class="chip on" data-t="all" onclick="filt('all',this)">Всі</button>
+        <span class="flbl" data-i18n="app.filter.tone">tone</span>
+        <button class="chip on" data-t="all" onclick="filt('all',this)" data-i18n="app.filter.all">All</button>
         <button class="chip" data-t="builder" onclick="filt('builder',this)">Builder</button>
         <button class="chip" data-t="insight" onclick="filt('insight',this)">Insight</button>
         <button class="chip" data-t="numbers" onclick="filt('numbers',this)">Numbers</button>
         <button class="chip" data-t="question" onclick="filt('question',this)">Question</button>
         <button class="chip" data-t="story" onclick="filt('story',this)">Story</button>
         <div class="fsep"></div>
-        <button class="chip-news" onclick="showTodayPanel()">✦ Пост на сьогодні</button>
+        <button class="chip-news" onclick="showTodayPanel()" data-i18n="app.today.btn">✦ Post for today</button>
       </div>
 
       <div class="scroll-area">
@@ -644,7 +644,7 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
         <div class="today-panel" id="today-panel" style="display:none">
           <div class="today-head" onclick="toggleToday()">
             <div class="today-pulse"></div>
-            <span class="today-lbl">Пост на сьогодні</span>
+            <span class="today-lbl" data-i18n="app.today.title">Post for today</span>
             <span class="today-date" id="today-date"></span>
             <span class="today-caret open" id="today-caret">▾</span>
           </div>
@@ -652,9 +652,9 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
             <div class="today-post-text" id="today-text"></div>
             <div class="today-meta" id="today-meta"></div>
             <div class="today-actions">
-              <button class="btn-pub-today" onclick="publishToday()">Копіювати → LinkedIn</button>
-              <button class="btn-skip-today" onclick="skipToday()">Інший варіант</button>
-              <button class="btn-close-today" onclick="document.getElementById('today-panel').style.display='none'">Закрити</button>
+              <button class="btn-pub-today" onclick="publishToday()" data-i18n="app.today.copy">Copy → LinkedIn</button>
+              <button class="btn-skip-today" onclick="skipToday()" data-i18n="app.today.skip">Another option</button>
+              <button class="btn-close-today" onclick="document.getElementById('today-panel').style.display='none'" data-i18n="app.today.close">Close</button>
             </div>
           </div>
         </div>
