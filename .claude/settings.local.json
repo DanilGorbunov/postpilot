@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m http.server 3002)",
+      "Bash(git checkout *)",
+      "Bash(git add *)"
+    ]
+  }
+}
