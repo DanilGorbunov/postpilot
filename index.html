@@ -309,6 +309,10 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 .post-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);display:flex;flex-direction:column;overflow:hidden;transition:border-color .12s,transform .12s,box-shadow .12s;cursor:default}
 .post-card:hover{border-color:var(--bd2);transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .post-card.copied{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.card-img-wrap{height:136px;overflow:hidden;position:relative;background:var(--s2);flex-shrink:0}
+.card-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.post-card:hover .card-img{transform:scale(1.04)}
+.card-img-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.45) 100%)}
 .card-head{display:flex;align-items:center;gap:8px;padding:11px 14px 9px;border-bottom:1px solid var(--bd)}
 .card-num{font-size:10px;color:var(--t3);min-width:22px;font-weight:500}
 .tone-tag{font-size:8px;letter-spacing:.8px;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;font-weight:500}
@@ -1956,6 +1960,33 @@ Sheets AI — описав "budget tracker для SaaS" → отримав го�
 
 ];
 
+// ── CARD PHOTOS ───────────────────────────────────────────────────────────────
+const CARD_PHOTOS = [
+  '1677442135703-1787eea5ce01', // AI visualization
+  '1555066931-4365d14bab8c',   // coding dark
+  '1499750310107-5fef28a66643', // laptop + coffee
+  '1460925895917-afdab827c52f', // business charts
+  '1485827404703-89b55fcc595e', // robot/AI tech
+  '1551288049-bebda4e38f71',   // data analytics
+  '1558618666-fcd25c85cd64',   // design tools
+  '1504868584819-f8e8b4b6d7e3', // tech workspace
+  '1611532736597-de2d4265fba3', // laptop work
+  '1516321318423-f06f85e504b3', // social/mobile
+  '1532619675605-1ede6c2ed2b0', // team collab
+  '1471897488648-5a7b4f32d453', // startup build
+];
+const TONE_PHOTOS = {
+  builder: [0,1,4,7,11],
+  insight: [2,5,9,10],
+  numbers: [3,5,8],
+  question: [2,6,10],
+  story: [2,8,11],
+};
+function cardPhoto(tone, idx) {
+  const pool = TONE_PHOTOS[tone] || [idx % CARD_PHOTOS.length];
+  return CARD_PHOTOS[pool[idx % pool.length]];
+}
+
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let USER = null;
 let PREFS = {};
@@ -2153,11 +2184,66 @@ function finishOnboarding() {
   PREFS.litoken = document.getElementById('ob-litoken').value;
   saveSync('prefs', PREFS);
   if (USER.email) saveSync('prefs_'+USER.email, PREFS);
-  loadAppState();
+  await loadAppState();
   showView('v-app');
   updateAppUI();
-  renderPosts();
-  toast(t('toast.profile.saved'), 'ok');
+  if (!isDemo && userPosts.length === 0 && PREFS.apikey?.startsWith('sk-')) {
+    genUserPosts();
+  } else {
+    renderPosts();
+    toast(t('toast.profile.saved'), 'ok');
+  }
+}
+
+// ── GENERATE USER POSTS ────────────────────────────────────────────────────────
+async function genUserPosts() {
+  const apiKey = PREFS.apikey;
+  if (!apiKey || !apiKey.startsWith('sk-')) { toast(t('toast.no.apikey'), 'err'); switchTab('settings', document.querySelector('.nav-item:last-child')); return; }
+
+  const grid = Q('#posts-grid');
+  if (grid) grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">✦</span><span id="gen-status">Generating your posts...</span></div>`;
+
+  const profile = `Name: ${PREFS.name || ''}
+Role: ${PREFS.role || ''}
+Location: ${PREFS.location || ''}
+Bio: ${PREFS.bio || ''}
+Projects: ${PREFS.projects || ''}
+Stack: ${PREFS.stack || ''}
+Target audience: ${PREFS.audience || ''}
+Preferred tone: ${PREFS.tone || 'friendly'}
+Avoid: ${PREFS.avoid || ''}
+Post length: ${PREFS.length || 'mix'}`;
+
+  const lang = PREFS.lang === 'uk' ? 'Ukrainian' : 'English';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 6000,
+        system: `You are a LinkedIn content expert. Generate exactly 10 high-quality LinkedIn posts for a personal brand. Return ONLY a valid JSON array, no other text.\n\nEach item: {"t":"<tone>","a":"<angle>","x":"<post text>"}\n\nTones to use (mix): builder, insight, story, opinion, tactical\nWrite in ${lang}. Be authentic, specific, avoid buzzwords. Posts should feel like real thoughts from this person, not marketing copy.`,
+        messages: [{ role: 'user', content: `Generate 10 LinkedIn posts for:\n\n${profile}` }]
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No JSON in response');
+    const posts = JSON.parse(match[0]);
+
+    userPosts = [...userPosts, ...posts];
+    saveSync(stateKey('posts'), userPosts);
+    renderPosts();
+    toast(`✓ ${posts.length} posts generated`, 'ok');
+  } catch(e) {
+    renderPosts();
+    toast('Generation error: ' + e.message, 'err');
+  }
 }
 
 // ── APP UI ────────────────────────────────────────────────────────────────────
@@ -2242,7 +2328,12 @@ function renderPosts() {
   Q('#posts-grid').innerHTML = vis.map(p => {
     const i = src.indexOf(p);
     const isSch = scheduled.some(s => s.id === i);
+    const photoId = cardPhoto(p.t, i);
     return `<div class="post-card" id="pc${i}">
+      <div class="card-img-wrap">
+        <img class="card-img" src="https://images.unsplash.com/photo-${photoId}?auto=format&fit=crop&w=560&h=136&q=75" alt="" loading="lazy">
+        <div class="card-img-overlay"></div>
+      </div>
       <div class="card-head">
         <span class="card-num">${i+1}</span>
         <span class="tone-tag t-${p.t}">${p.t}</span>
@@ -2257,7 +2348,15 @@ function renderPosts() {
         <button class="btn-card btn-copy-card" onclick="copyPost(${i})">${t('post.copy.btn')}</button>
       </div>
     </div>`;
-  }).join('') || `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">✦</span>${t('post.empty')}</div>`;
+  }).join('') || (() => {
+    const hasKey = !isDemo && PREFS.apikey?.startsWith('sk-');
+    return `<div class="empty-state" style="grid-column:1/-1">
+      <span class="empty-icon">✦</span>
+      ${hasKey
+        ? `<div style="margin-bottom:12px">${t('post.empty.gen')}</div><button class="btn-submit" style="max-width:220px;margin:0 auto" onclick="genUserPosts()">${t('post.gen.btn')}</button>`
+        : t('post.empty')}
+    </div>`;
+  })();
   updateBadges();
 }
 
@@ -2799,7 +2898,7 @@ const STRINGS = {
     'settings.label.apikey':'Anthropic API Key','settings.label.linkedin':'LinkedIn URL',
     'settings.label.litoken':'LinkedIn Access Token','settings.label.site':'Website','settings.save':'Save settings',
     'post.chars':'chars','post.copy.btn':'Copy','post.tomorrow.off':'+ tomorrow','post.tomorrow.on':'✓ tomorrow',
-    'post.empty':'No posts found','sch.tomorrow.lbl':'TOMORROW',
+    'post.empty':'No posts yet','post.empty.gen':'Your profile is ready — generate your first posts with AI','post.gen.btn':'✦ Generate posts','sch.tomorrow.lbl':'TOMORROW',
     'sch.empty':'No scheduled posts\nClick "+ tomorrow" on any post','del.empty':'No deleted posts',
     'del.restore.btn':'↩ restore',
     'toast.profile.saved':'🎉 Profile saved! Welcome to PostPilot!','toast.settings.saved':'✓ Settings saved',
@@ -2882,7 +2981,7 @@ const STRINGS = {
     'settings.label.apikey':'Anthropic API Key','settings.label.linkedin':'LinkedIn URL',
     'settings.label.litoken':'LinkedIn Access Token','settings.label.site':'Сайт','settings.save':'Зберегти налаштування',
     'post.chars':'симв','post.copy.btn':'Копіювати','post.tomorrow.off':'+ завтра','post.tomorrow.on':'✓ завтра',
-    'post.empty':'Постів не знайдено','sch.tomorrow.lbl':'ЗАВТРА',
+    'post.empty':'Постів ще немає','post.empty.gen':'Профіль готовий — згенеруй перші пости через AI','post.gen.btn':'✦ Згенерувати пости','sch.tomorrow.lbl':'ЗАВТРА',
     'sch.empty':'Немає запланованих постів\nНатисни "+ завтра" на будь-якому пості','del.empty':'Немає видалених постів',
     'del.restore.btn':'↩ відновити',
     'toast.profile.saved':'🎉 Профіль збережено! Ласкаво просимо до PostPilot!','toast.settings.saved':'✓ Налаштування збережено',
