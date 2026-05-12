@@ -238,7 +238,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
   };
 
   return (
-    <div style={s.root}>
+    <form style={s.root} onSubmit={e => { e.preventDefault(); handleSave(); }}>
       {/* Profile */}
       <div style={s.section}>
         <div style={s.sectionTitle}>
@@ -373,8 +373,8 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
       {/* Save */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <button
+          type="submit"
           style={{ ...s.saveBtn, opacity: saving || demoMode ? 0.7 : 1 }}
-          onClick={handleSave}
           disabled={saving || demoMode}
           onMouseEnter={e => { if (!saving && !demoMode) e.currentTarget.style.background = 'var(--ac2)'; }}
           onMouseLeave={e => (e.currentTarget.style.background = 'var(--ac)')}
@@ -401,6 +401,6 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
           <strong style={{ color: 'var(--t1)' }}>Email:</strong> {user.email}
         </div>
       </div>
-    </div>
+    </form>
   );
 }
