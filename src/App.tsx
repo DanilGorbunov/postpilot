@@ -6,7 +6,7 @@ import OnboardingView from './components/OnboardingView';
 import AppLayout from './components/AppLayout';
 
 export type View = 'landing' | 'auth' | 'onboarding' | 'app';
-export type AppTab = 'posts' | 'schedule' | 'calendar' | 'news' | 'ideas' | 'settings';
+export type AppTab = 'posts' | 'schedule' | 'calendar' | 'news' | 'ideas' | 'settings' | 'analytics' | 'planner';
 
 function App() {
   const [view, setView] = useState<View>('landing');
