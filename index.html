@@ -309,10 +309,11 @@ body{font-family:var(--mono);background:var(--bg);color:var(--t1);min-height:100
 .post-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);display:flex;flex-direction:column;overflow:hidden;transition:border-color .12s,transform .12s,box-shadow .12s;cursor:default}
 .post-card:hover{border-color:var(--bd2);transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .post-card.copied{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
-.card-img-wrap{height:136px;overflow:hidden;position:relative;background:var(--s2);flex-shrink:0}
+.card-img-wrap{height:160px;overflow:hidden;position:relative;background:var(--s2);flex-shrink:0;display:block;border-bottom:1px solid var(--bd)}
 .card-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
 .post-card:hover .card-img{transform:scale(1.04)}
-.card-img-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.45) 100%)}
+.card-img-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.4) 100%)}
+.card-play-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;pointer-events:none;border:1.5px solid rgba(255,255,255,.3)}
 .card-head{display:flex;align-items:center;gap:8px;padding:11px 14px 9px;border-bottom:1px solid var(--bd)}
 .card-num{font-size:10px;color:var(--t3);min-width:22px;font-weight:500}
 .tone-tag{font-size:8px;letter-spacing:.8px;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;font-weight:500}
@@ -1972,17 +1973,14 @@ Sheets AI — описав "budget tracker для SaaS" → отримав го�
 ];
 
 // ── CARD PHOTOS ───────────────────────────────────────────────────────────────
-// Picsum seeds per tone (consistent, no API key, no CORS)
-const TONE_SEEDS = {
-  builder: [1,10,20,42,50,64,77],
-  insight: [3,12,33,55,88,101],
-  numbers: [5,25,45,65,85,105],
-  question: [7,27,47,67,87,107],
-  story:   [9,29,49,69,89,109],
-};
-function cardPhoto(tone, idx) {
-  const pool = TONE_SEEDS[tone] || Array.from({length:12},(_,k)=>k*8+idx);
-  return pool[idx % pool.length];
+function postKeyword(angle) {
+  const word = (angle||'').split(/[–—\-]/)[0].replace(/[^a-zA-Z0-9 ]/g,'').trim().split(' ')[0];
+  return encodeURIComponent(word || 'technology');
+}
+function extractVideoInfo(text) {
+  const m = (text||'').match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([\w-]+)|https?:\/\/youtu\.be\/([\w-]+)/);
+  if (m) return { id: m[1]||m[2], url: m[0] };
+  return null;
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -2194,12 +2192,21 @@ async function finishOnboarding() {
 }
 
 // ── GENERATE USER POSTS ────────────────────────────────────────────────────────
+function postSkelHTML() {
+  const lines = [90,75,85,60,80,70].map(w=>`<div class="post-skel-line" style="width:${w}%"></div>`).join('');
+  return `<div class="post-skel">
+    <div class="post-skel-head"><div class="post-skel-num"></div><div class="post-skel-tag"></div><div class="post-skel-angle"></div></div>
+    <div class="post-skel-body">${lines}</div>
+    <div class="post-skel-foot"><div class="post-skel-chars"></div><div class="post-skel-btn"></div><div class="post-skel-btn"></div></div>
+  </div>`;
+}
+
 async function genUserPosts() {
   const apiKey = PREFS.apikey;
   if (!apiKey || !apiKey.startsWith('sk-')) { toast(t('toast.no.apikey'), 'err'); switchTab('settings', document.querySelector('.nav-item:last-child')); return; }
 
   const grid = Q('#posts-grid');
-  if (grid) grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">✦</span><span id="gen-status">Generating your posts...</span></div>`;
+  if (grid) grid.innerHTML = Array(9).fill(0).map(postSkelHTML).join('');
 
   const profile = `Name: ${PREFS.name || ''}
 Role: ${PREFS.role || ''}
@@ -2220,9 +2227,9 @@ Post length: ${PREFS.length || 'mix'}`;
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 6000,
-        system: `You are a LinkedIn content expert. Generate exactly 10 high-quality LinkedIn posts for a personal brand. Return ONLY a valid JSON array, no other text.\n\nEach item: {"t":"<tone>","a":"<angle>","x":"<post text>"}\n\nTones to use (mix): builder, insight, story, opinion, tactical\nWrite in ${lang}. Be authentic, specific, avoid buzzwords. Posts should feel like real thoughts from this person, not marketing copy.`,
-        messages: [{ role: 'user', content: `Generate 10 LinkedIn posts for:\n\n${profile}` }]
+        max_tokens: 16000,
+        system: `You are a LinkedIn content expert. Generate exactly 50 high-quality LinkedIn posts for a personal brand. Return ONLY a valid JSON array, no other text.\n\nEach item: {"t":"<tone>","a":"<angle>","x":"<post text>"}\n\nTones — use 10 of each: builder, insight, story, opinion, tactical\nWrite in ${lang}. Be authentic, specific, no buzzwords. Vary hooks, length, and structure.`,
+        messages: [{ role: 'user', content: `Generate 50 LinkedIn posts for:\n\n${profile}` }]
       })
     });
 
@@ -2326,18 +2333,26 @@ function renderPosts() {
   Q('#posts-grid').innerHTML = vis.map(p => {
     const i = src.indexOf(p);
     const isSch = scheduled.some(s => s.id === i);
-    const photoId = cardPhoto(p.t, i);
+    const kw = postKeyword(p.a);
+    const vid = extractVideoInfo(p.x);
+    const media = vid
+      ? `<a class="card-img-wrap" href="${vid.url}" target="_blank" rel="noopener">
+          <img class="card-img" src="https://img.youtube.com/vi/${vid.id}/hqdefault.jpg" alt="" loading="lazy">
+          <div class="card-img-overlay"></div>
+          <div class="card-play-btn">▶</div>
+        </a>`
+      : `<div class="card-img-wrap">
+          <img class="card-img" src="https://loremflickr.com/560/160/${kw}?lock=${i}" alt="" loading="lazy">
+          <div class="card-img-overlay"></div>
+        </div>`;
     return `<div class="post-card" id="pc${i}">
-      <div class="card-img-wrap">
-        <img class="card-img" src="https://picsum.photos/seed/${photoId}/560/136" alt="" loading="lazy">
-        <div class="card-img-overlay"></div>
-      </div>
       <div class="card-head">
         <span class="card-num">${i+1}</span>
         <span class="tone-tag t-${p.t}">${p.t}</span>
         ${isSch ? `<span class="sch-badge">${t('post.tomorrow.off').replace('+','').trim()}</span>` : ''}
         <span class="card-angle">${p.a}</span>
       </div>
+      ${media}
       <div class="card-body">${esc(p.x)}</div>
       <div class="card-foot">
         <span class="card-chars">${p.x.length} ${t('post.chars')}</span>
