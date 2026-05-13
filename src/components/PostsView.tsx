@@ -48,7 +48,7 @@ const TONE_COLORS: Record<string, string> = {
 
 const POST_LANGUAGES = [
   { code: 'English', label: 'EN' },
-  { code: 'Ukrainian', label: 'UK' },
+  { code: 'Ukrainian', label: 'UA' },
   { code: 'German', label: 'DE' },
   { code: 'French', label: 'FR' },
   { code: 'Spanish', label: 'ES' },
