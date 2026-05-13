@@ -401,7 +401,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const [scheduleModal, setScheduleModal] = useState<ScheduleModal | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
-  const [displayLang, setDisplayLang] = useState('English');
+  const [displayLang, setDisplayLang] = useState('Ukrainian');
   // Local cache: postId → translated text (used while saving to Convex)
   const [pendingTranslations, setPendingTranslations] = useState<Record<string, string>>({});
   const [translating, setTranslating] = useState(false);
@@ -562,6 +562,14 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
       setTranslating(false);
     }
   };
+
+  // Auto-translate to Ukrainian when posts load (if not yet saved)
+  useEffect(() => {
+    if (demoMode || !rawPosts || rawPosts.length === 0 || translating || !prefs?.apikey) return;
+    const needTranslation = rawPosts.filter(p => !(p as any).translations?.['Ukrainian']);
+    if (needTranslation.length === 0) return;
+    handlePostLangChange('Ukrainian');
+  }, [rawPosts?.length, prefs?.apikey]);
 
   return (
     <div style={s.root}>
