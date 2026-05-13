@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { useUILang } from '../lib/i18n';
+import { useTheme } from '../lib/theme';
 
 interface Props {
   onGetStarted: () => void;
@@ -314,18 +316,63 @@ const features = [
   },
 ];
 
+function langBtnStyle(active: boolean): CSSProperties {
+  return {
+    background: active ? 'rgba(107,79,255,.15)' : 'none',
+    border: active ? '1px solid rgba(107,79,255,.35)' : '1px solid transparent',
+    color: active ? 'var(--ac2)' : 'var(--t3)',
+    borderRadius: 6,
+    padding: '3px 7px',
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'var(--head)',
+    transition: 'all .15s',
+  };
+}
+
 export default function LandingView({ onGetStarted, onDemo }: Props) {
+  const { lang, setLang } = useUILang();
+  const { theme, toggle: toggleTheme } = useTheme();
+
+  const navBg = theme === 'dark' ? 'rgba(10,10,15,.82)' : 'rgba(244,244,248,.88)';
+
   return (
     <div style={s.root}>
       <div style={s.orb1} />
       <div style={s.orb2} />
 
-      <nav style={s.nav}>
+      <nav style={{ ...s.nav, background: navBg }}>
         <div style={s.logo}>
           <div style={s.logoIcon}>P</div>
           <span>Post<span style={s.logoAccent}>Pilot</span></span>
         </div>
         <div style={s.navBtns}>
+          {/* Language toggle */}
+          <div style={{ display: 'flex', gap: 2, background: 'var(--s2)', borderRadius: 8, padding: 3, border: '1px solid var(--bd)' }}>
+            <button style={langBtnStyle(lang === 'en')} onClick={() => setLang('en')}>EN</button>
+            <button style={langBtnStyle(lang === 'uk')} onClick={() => setLang('uk')}>UK</button>
+          </div>
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+            style={{
+              background: 'var(--s2)',
+              border: '1px solid var(--bd)',
+              borderRadius: 8,
+              color: 'var(--t2)',
+              cursor: 'pointer',
+              fontSize: 14,
+              padding: '5px 8px',
+              lineHeight: 1,
+              transition: 'all .15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--s3)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--s2)'; }}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           <button
             style={s.btnGhost}
             onClick={onDemo}
