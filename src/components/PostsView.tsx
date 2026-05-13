@@ -49,9 +49,6 @@ const TONE_COLORS: Record<string, string> = {
 const POST_LANGUAGES = [
   { code: 'English', label: 'EN' },
   { code: 'Ukrainian', label: 'UA' },
-  { code: 'German', label: 'DE' },
-  { code: 'French', label: 'FR' },
-  { code: 'Spanish', label: 'ES' },
 ];
 
 function toneColor(tone: string) {
@@ -401,7 +398,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const [scheduleModal, setScheduleModal] = useState<ScheduleModal | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
-  const [displayLang, setDisplayLang] = useState('Ukrainian');
+  const [displayLang, setDisplayLang] = useState('English');
   // Local cache: postId → translated text (used while saving to Convex)
   const [pendingTranslations, setPendingTranslations] = useState<Record<string, string>>({});
   const [translating, setTranslating] = useState(false);
@@ -467,13 +464,37 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
           avoid: prefs.avoid || undefined,
           contentPillars: prefs.contentPillars || undefined,
         },
-        lang: prefs.lang || 'English',
+        lang: 'English',
         count,
       });
-      await createManyPosts({
+
+      const ids = await createManyPosts({
         userId: user._id as any,
         posts: generated,
       });
+
+      // Immediately translate to Ukrainian and save so switching is instant
+      try {
+        const postsForTranslation = generated.map((p, i) => ({
+          id: ids[i],
+          content: p.content,
+        }));
+        const translated = await translatePostsAction({
+          apiKey: prefs.apikey,
+          posts: postsForTranslation,
+          targetLang: 'Ukrainian',
+        });
+        await saveTranslationsMut({
+          entries: translated.map(tr => ({
+            postId: tr.id as any,
+            lang: 'Ukrainian',
+            content: tr.content,
+          })),
+        });
+      } catch (e) {
+        console.error('Auto-translation to Ukrainian failed:', e);
+        // Non-critical — posts are created, translation can be done on demand
+      }
     } catch (e) {
       console.error('Generation failed:', e);
       setGenerateError(e instanceof Error ? e.message : 'Generation failed');
@@ -562,14 +583,6 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
       setTranslating(false);
     }
   };
-
-  // Auto-translate to Ukrainian when posts load (if not yet saved)
-  useEffect(() => {
-    if (demoMode || !rawPosts || rawPosts.length === 0 || translating || !prefs?.apikey) return;
-    const needTranslation = rawPosts.filter(p => !(p as any).translations?.['Ukrainian']);
-    if (needTranslation.length === 0) return;
-    handlePostLangChange('Ukrainian');
-  }, [rawPosts?.length, prefs?.apikey]);
 
   return (
     <div style={s.root}>
