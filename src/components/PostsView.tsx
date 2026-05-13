@@ -401,6 +401,9 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const [scheduleModal, setScheduleModal] = useState<ScheduleModal | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
+  const [displayLang, setDisplayLang] = useState('English');
+  const [translatedContent, setTranslatedContent] = useState<Record<string, string>>({});
+  const [translating, setTranslating] = useState(false);
   const { t } = useUILang();
 
   const rawPosts = useQuery(
@@ -418,10 +421,11 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   }, [autoGenerate, rawPosts, prefs?.apikey]);
 
   const generatePostsAction = useAction(api.ai.generatePosts);
+  const translatePostsAction = useAction(api.ai.translatePosts);
   const createManyPosts = useMutation(api.posts.createManyPosts);
   const deletePostMut = useMutation(api.posts.deletePost);
   const setStatus = useMutation(api.posts.setStatus);
-  const upsertPrefs = useMutation(api.users.upsertPrefs);
+
 
   const hasApiKey = prefs?.apikey?.startsWith('sk-ant');
 
@@ -444,6 +448,8 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
     if (!prefs?.apikey || !hasApiKey) return;
     setGenerating(true);
     setGenerateError(null);
+    setTranslatedContent({});
+    setDisplayLang('English');
     try {
       const generated = await generatePostsAction({
         userId: user._id as any,
@@ -507,13 +513,35 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const isLoading = !demoMode && rawPosts === undefined;
   const isEmpty = !isLoading && !generating && posts.length === 0;
 
+  const getDisplayContent = (postId: string, original: string) =>
+    translatedContent[postId] ?? original;
+
   const handlePostLangChange = async (langCode: string) => {
-    if (demoMode || !prefs) return;
-    await upsertPrefs({
-      userId: user._id as any,
-      name: prefs.name || user.name,
-      lang: langCode,
-    });
+    setDisplayLang(langCode);
+    if (langCode === 'English') {
+      setTranslatedContent({});
+      return;
+    }
+    if (!prefs?.apikey) return;
+    setTranslating(true);
+    try {
+      const postsToTranslate = posts.map(p => ({ id: p._id, content: p.content }));
+      const translated = await translatePostsAction({
+        apiKey: prefs.apikey,
+        posts: postsToTranslate,
+        targetLang: langCode,
+      });
+      const map: Record<string, string> = {};
+      for (const tr of translated) {
+        map[tr.id] = tr.content;
+      }
+      setTranslatedContent(map);
+    } catch (e) {
+      console.error('Translation failed:', e);
+      setDisplayLang('English');
+    } finally {
+      setTranslating(false);
+    }
   };
 
   return (
@@ -553,12 +581,19 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
           {POST_LANGUAGES.map(l => (
             <button
               key={l.code}
-              style={postChipStyle((prefs?.lang ?? 'English') === l.code)}
-              onClick={() => handlePostLangChange(l.code)}
+              style={{ ...postChipStyle(displayLang === l.code), minWidth: 44 }}
+              onClick={() => !translating && handlePostLangChange(l.code)}
+              disabled={translating}
             >
               {l.label}
             </button>
           ))}
+          {translating && (
+            <span style={{ fontSize: 12, color: 'var(--t3)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
+              Translating…
+            </span>
+          )}
         </div>
       )}
 
@@ -588,8 +623,9 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
 
         {!generating && filteredPosts.map(post => {
           const isExpanded = expandedId === post._id;
-          const hashtags = (post.content.match(/#\w+/g) || []);
-          const bodyText = post.content.replace(/(#\w+\s*)+$/, '').trimEnd();
+          const displayText = getDisplayContent(post._id, post.content);
+          const hashtags = (displayText.match(/#\w+/g) || []);
+          const bodyText = displayText.replace(/(#\w+\s*)+$/, '').trimEnd();
           return (
             <div
               key={post._id}
@@ -599,7 +635,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
             >
               <div style={s.cardTop}>
                 <span style={postToneBadgeStyle(post.tone)}>{post.tone}</span>
-                <span style={s.charCount}>{post.content.length}c</span>
+                <span style={s.charCount}>{displayText.length}c</span>
               </div>
 
               <div style={s.angle}>{post.angle.replace(/_/g, ' ')}</div>
@@ -609,7 +645,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                 onClick={() => setExpandedId(isExpanded ? null : post._id)}
                 title={isExpanded ? 'Click to collapse' : 'Click to expand'}
               >
-                {isExpanded ? post.content : bodyText}
+                {isExpanded ? displayText : bodyText}
               </div>
 
               {hashtags.length > 0 && (
@@ -645,7 +681,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                     ...s.actionBtn,
                     ...(copied === post._id ? { color: 'var(--ok)', borderColor: 'var(--ok)' } : {}),
                   }}
-                  onClick={() => handleCopy(post._id, post.content)}
+                  onClick={() => handleCopy(post._id, displayText)}
                   onMouseEnter={e => {
                     if (copied !== post._id) {
                       e.currentTarget.style.background = 'var(--s3)';
@@ -663,7 +699,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                 </button>
                 <button
                   style={s.actionBtn}
-                  onClick={() => handleSchedule(post._id, post.content)}
+                  onClick={() => handleSchedule(post._id, displayText)}
                   disabled={demoMode}
                   title={demoMode ? 'Sign in to schedule' : 'Schedule post'}
                   onMouseEnter={e => {

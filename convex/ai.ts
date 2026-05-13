@@ -116,6 +116,54 @@ Each post should:
   },
 });
 
+export const translatePosts = action({
+  args: {
+    apiKey: v.string(),
+    posts: v.array(v.object({ id: v.string(), content: v.string() })),
+    targetLang: v.string(),
+  },
+  handler: async (_ctx, { apiKey, posts, targetLang }) => {
+    const BATCH = 5;
+    const results: Array<{ id: string; content: string }> = [];
+
+    for (let i = 0; i < posts.length; i += BATCH) {
+      const batch = posts.slice(i, i + BATCH);
+
+      const userMessage = batch
+        .map((p, idx) => `---POST_${idx + 1}---\n${p.content}`)
+        .join('\n\n');
+
+      const raw = await callClaude(
+        apiKey,
+        `You are a professional LinkedIn post translator. Translate each post to ${targetLang}.
+Rules:
+- Preserve emojis, line breaks, and bullet points exactly
+- Translate hashtag words but keep the # symbol
+- Maintain professional LinkedIn tone
+- Return posts with EXACTLY the same separator format: ---POST_N--- at the start of each post
+- Do not add any extra text before the first ---POST_1--- marker`,
+        userMessage,
+        8192
+      );
+
+      // Parse: split by ---POST_N--- markers
+      const blocks = raw.split(/---POST_\d+---/).map((b: string) => b.trim()).filter(Boolean);
+
+      batch.forEach((p, idx) => {
+        const translated = blocks[idx];
+        if (translated) {
+          results.push({ id: p.id, content: translated });
+        } else {
+          // Fallback to original if parse failed
+          results.push({ id: p.id, content: p.content });
+        }
+      });
+    }
+
+    return results;
+  },
+});
+
 export const scorePost = action({
   args: {
     apiKey: v.string(),
