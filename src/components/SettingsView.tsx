@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
+import { useUILang } from '../lib/i18n';
 
 interface Props {
   user: User;
@@ -194,6 +195,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
   }, [prefs]);
 
   const upsertPrefs = useMutation(api.users.upsertPrefs);
+  const { t } = useUILang();
 
   const toggleTone = (tone: string) => {
     setSelectedTones(prev =>
@@ -242,23 +244,23 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
       {/* Profile */}
       <div style={s.section}>
         <div style={s.sectionTitle}>
-          <span style={s.sectionIcon}>◉</span> Profile
+          <span style={s.sectionIcon}>◉</span> {t('profile')}
         </div>
 
         <div style={s.row}>
-          <label style={s.label}>Full name</label>
+          <label style={s.label}>{t('full_name')}</label>
           <input style={s.input} type="text" value={name} onChange={e => setName(e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
         <div style={s.row}>
-          <label style={s.label}>Role / Title</label>
+          <label style={s.label}>{t('role_title')}</label>
           <input style={s.input} type="text" placeholder="e.g. Indie Founder, Senior Engineer" value={role} onChange={e => setRole(e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
         <div style={s.row}>
-          <label style={s.label}>Location</label>
+          <label style={s.label}>{t('location')}</label>
           <input style={s.input} type="text" placeholder="e.g. Remote, San Francisco" value={location} onChange={e => setLocation(e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
         <div style={s.row}>
-          <label style={s.label}>Bio</label>
+          <label style={s.label}>{t('bio')}</label>
           <textarea style={s.textarea} placeholder="Who you are..." value={bio} onChange={e => setBio(e.target.value)} onFocus={focusStyle as any} onBlur={blurStyle as any} />
         </div>
       </div>
@@ -266,7 +268,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
       {/* Work context */}
       <div style={s.section}>
         <div style={s.sectionTitle}>
-          <span style={s.sectionIcon}>◈</span> Work context
+          <span style={s.sectionIcon}>◈</span> {t('work_context')}
         </div>
 
         <div style={s.row}>
@@ -282,15 +284,15 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
       {/* Content strategy */}
       <div style={s.section}>
         <div style={s.sectionTitle}>
-          <span style={s.sectionIcon}>✦</span> Content strategy
+          <span style={s.sectionIcon}>✦</span> {t('content_strategy')}
         </div>
 
         <div style={s.row}>
-          <label style={s.label}>Target audience</label>
+          <label style={s.label}>{t('target_audience')}</label>
           <input style={s.input} type="text" placeholder="Who reads your posts..." value={audience} onChange={e => setAudience(e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
         <div style={s.row}>
-          <label style={s.label}>Preferred tones</label>
+          <label style={s.label}>{t('preferred_tones')}</label>
           <div style={s.chips}>
             {TONES.map(tone => (
               <button key={tone} style={settingsChipStyle(selectedTones.includes(tone))} onClick={() => toggleTone(tone)} type="button">
@@ -300,7 +302,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
           </div>
         </div>
         <div style={s.row}>
-          <label style={s.label}>Post language</label>
+          <label style={s.label}>{t('post_language')}</label>
           <div style={s.langChips}>
             {LANGUAGES.map(l => (
               <button
@@ -315,7 +317,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
           </div>
         </div>
         <div style={s.row}>
-          <label style={s.label}>Topics / phrases to avoid</label>
+          <label style={s.label}>{t('topics_to_avoid')}</label>
           <input style={s.input} type="text" placeholder="e.g. politics, competitors" value={avoid} onChange={e => setAvoid(e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
       </div>
@@ -323,7 +325,7 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
       {/* Integrations */}
       <div style={s.section}>
         <div style={s.sectionTitle}>
-          <span style={s.sectionIcon}>⊞</span> Integrations
+          <span style={s.sectionIcon}>⊞</span> {t('integrations')}
         </div>
 
         <div style={s.row}>
@@ -379,21 +381,21 @@ export default function SettingsView({ user, prefs: initialPrefs, demoMode }: Pr
           onMouseEnter={e => { if (!saving && !demoMode) e.currentTarget.style.background = 'var(--ac2)'; }}
           onMouseLeave={e => (e.currentTarget.style.background = 'var(--ac)')}
         >
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? t('saving') : t('save_settings')}
         </button>
         {saved && (
           <span style={s.savedMsg}>
-            ✓ Settings saved
+            {t('settings_saved')}
           </span>
         )}
         {demoMode && (
-          <span style={{ fontSize: 12, color: 'var(--t3)' }}>Sign in to save settings</span>
+          <span style={{ fontSize: 12, color: 'var(--t3)' }}>{t('sign_in_to_save')}</span>
         )}
       </div>
 
       {/* Account info */}
       <div style={{ ...s.section, marginTop: 24 }}>
-        <div style={s.sectionTitle}>Account</div>
+        <div style={s.sectionTitle}>{t('account')}</div>
         <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 4 }}>
           <strong style={{ color: 'var(--t1)' }}>Name:</strong> {user.name}
         </div>

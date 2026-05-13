@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
+import { useUILang } from '../lib/i18n';
 
 interface Props {
   user: User;
@@ -148,6 +149,7 @@ const s: Record<string, CSSProperties> = {
 };
 
 export default function ScheduleView({ user, demoMode }: Props) {
+  const { t } = useUILang();
   const scheduledPosts = useQuery(
     api.posts.getPosts,
     !demoMode ? { userId: user._id as any, status: 'scheduled' as const } : 'skip'
@@ -185,8 +187,8 @@ export default function ScheduleView({ user, demoMode }: Props) {
       <div style={s.root}>
         <div style={s.empty}>
           <span style={s.emptyIcon}>◉</span>
-          <div style={s.emptyTitle}>No scheduled posts</div>
-          <div>Schedule posts from the Posts tab to see them here.</div>
+          <div style={s.emptyTitle}>{t('no_scheduled')}</div>
+          <div>{t('no_scheduled_hint')}</div>
         </div>
       </div>
     );
@@ -225,7 +227,7 @@ export default function ScheduleView({ user, demoMode }: Props) {
                     onMouseEnter={e => { e.currentTarget.style.color = 'var(--t1)'; e.currentTarget.style.background = 'var(--s3)'; }}
                     onMouseLeave={e => { e.currentTarget.style.color = 'var(--t3)'; e.currentTarget.style.background = 'var(--s2)'; }}
                   >
-                    Copy
+                    {t('copy')}
                   </button>
                   <button
                     style={s.actionBtn}
@@ -234,7 +236,7 @@ export default function ScheduleView({ user, demoMode }: Props) {
                     onMouseEnter={e => { e.currentTarget.style.color = 'var(--err)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,.3)'; }}
                     onMouseLeave={e => { e.currentTarget.style.color = 'var(--t3)'; e.currentTarget.style.borderColor = 'var(--bd)'; }}
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 </div>
               </div>

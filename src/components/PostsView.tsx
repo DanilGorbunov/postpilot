@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
+import { useUILang } from '../lib/i18n';
 
 interface Prefs {
   _id?: string;
@@ -44,6 +45,14 @@ const TONE_COLORS: Record<string, string> = {
   professional: '#60607a',
   informative: '#0077b5',
 };
+
+const POST_LANGUAGES = [
+  { code: 'English', label: 'EN' },
+  { code: 'Ukrainian', label: 'UK' },
+  { code: 'German', label: 'DE' },
+  { code: 'French', label: 'FR' },
+  { code: 'Spanish', label: 'ES' },
+];
 
 function toneColor(tone: string) {
   const k = tone.toLowerCase();
@@ -392,6 +401,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const [scheduleModal, setScheduleModal] = useState<ScheduleModal | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
+  const { t } = useUILang();
 
   const rawPosts = useQuery(
     api.posts.getPosts,
@@ -411,6 +421,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const createManyPosts = useMutation(api.posts.createManyPosts);
   const deletePostMut = useMutation(api.posts.deletePost);
   const setStatus = useMutation(api.posts.setStatus);
+  const upsertPrefs = useMutation(api.users.upsertPrefs);
 
   const hasApiKey = prefs?.apikey?.startsWith('sk-ant');
 
@@ -496,17 +507,26 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const isLoading = !demoMode && rawPosts === undefined;
   const isEmpty = !isLoading && !generating && posts.length === 0;
 
+  const handlePostLangChange = async (langCode: string) => {
+    if (demoMode || !prefs) return;
+    await upsertPrefs({
+      userId: user._id as any,
+      name: prefs.name || user.name,
+      lang: langCode,
+    });
+  };
+
   return (
     <div style={s.root}>
       <div style={s.toolbar}>
         <div style={s.chips}>
-          {TONES.map(t => (
+          {TONES.map(tone => (
             <button
-              key={t}
-              style={postChipStyle(toneFilter === t)}
-              onClick={() => setToneFilter(t)}
+              key={tone}
+              style={postChipStyle(toneFilter === tone)}
+              onClick={() => setToneFilter(tone)}
             >
-              {t}
+              {tone}
             </button>
           ))}
         </div>
@@ -521,12 +541,26 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
             {generating ? (
               <>
                 <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
-                Generating...
+                {t('generating')}
               </>
-            ) : '✦ Generate Posts'}
+            ) : t('generate_posts')}
           </button>
         )}
       </div>
+
+      {!demoMode && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          {POST_LANGUAGES.map(l => (
+            <button
+              key={l.code}
+              style={postChipStyle((prefs?.lang ?? 'English') === l.code)}
+              onClick={() => handlePostLangChange(l.code)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {generateError && (
         <div style={{ margin: '0 0 16px', padding: '10px 16px', background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', borderRadius: 'var(--r)', color: 'var(--err)', fontSize: 13 }}>
@@ -601,7 +635,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
 
               {isExpanded && (
                 <div style={{ fontSize: 11, color: 'var(--t3)', textAlign: 'right' as const }}>
-                  Click to collapse
+                  {t('click_to_collapse')}
                 </div>
               )}
 
@@ -625,7 +659,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                     }
                   }}
                 >
-                  {copied === post._id ? '✓ Copied' : 'Copy'}
+                  {copied === post._id ? t('copied') : t('copy')}
                 </button>
                 <button
                   style={s.actionBtn}
@@ -641,7 +675,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                     e.currentTarget.style.color = 'var(--t3)';
                   }}
                 >
-                  Schedule
+                  {t('schedule_post')}
                 </button>
                 <button
                   style={s.deleteBtn}
@@ -668,12 +702,12 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
           <div style={s.emptyState}>
             <div style={s.emptyIcon}>◈</div>
             <div style={s.emptyTitle}>
-              {hasApiKey ? 'Ready to generate posts' : 'No posts yet'}
+              {hasApiKey ? t('ready_to_generate') : t('no_posts_yet')}
             </div>
             <div style={s.emptyText}>
               {hasApiKey
-                ? 'Generate AI-powered LinkedIn posts tailored to your profile and audience.'
-                : 'Add your Anthropic API key in Settings to start generating posts with AI.'}
+                ? t('ready_to_generate_hint')
+                : t('add_api_key_hint')}
             </div>
             {hasApiKey && !demoMode && (
               <button
@@ -682,7 +716,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--ac2)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'var(--ac)')}
               >
-                ✦ Generate 18 Posts
+                {t('generate_18')}
               </button>
             )}
           </div>
@@ -693,8 +727,8 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
       {scheduleModal && (
         <div style={s.scheduleModal} onClick={() => setScheduleModal(null)}>
           <div style={s.scheduleCard} onClick={e => e.stopPropagation()}>
-            <div style={s.modalTitle}>Schedule Post</div>
-            <label style={s.modalLabel}>Date</label>
+            <div style={s.modalTitle}>{t('schedule_post_title')}</div>
+            <label style={s.modalLabel}>{t('date_label')}</label>
             <input
               style={s.modalInput}
               type="date"
@@ -716,7 +750,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                 }}
                 onClick={() => setScheduleModal(null)}
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 style={{
@@ -732,7 +766,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
                 }}
                 onClick={confirmSchedule}
               >
-                Schedule
+                {t('schedule_post')}
               </button>
             </div>
           </div>

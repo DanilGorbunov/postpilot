@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { type User } from '../lib/auth';
+import { useUILang } from '../lib/i18n';
 
 interface Props {
   user: User;
@@ -145,6 +146,7 @@ export default function IdeasView({ user, demoMode }: Props) {
   const [filter, setFilter] = useState<'active' | 'used'>('active');
   const [newIdea, setNewIdea] = useState('');
   const [adding, setAdding] = useState(false);
+  const { t } = useUILang();
 
   const rawIdeas = useQuery(
     api.ideas.getIdeas,
@@ -183,7 +185,7 @@ export default function IdeasView({ user, demoMode }: Props) {
         <input
           style={s.addInput}
           type="text"
-          placeholder="Capture an idea for a post..."
+          placeholder={t('add_idea_placeholder')}
           value={newIdea}
           onChange={e => setNewIdea(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
@@ -198,7 +200,7 @@ export default function IdeasView({ user, demoMode }: Props) {
           onMouseEnter={e => { if (!adding && !demoMode) e.currentTarget.style.background = 'var(--ac2)'; }}
           onMouseLeave={e => (e.currentTarget.style.background = 'var(--ac)')}
         >
-          + Add
+          {t('add')}
         </button>
       </div>
 
@@ -215,7 +217,7 @@ export default function IdeasView({ user, demoMode }: Props) {
         {filtered.length === 0 && (
           <div style={s.empty}>
             <span style={s.emptyIcon}>✦</span>
-            {filter === 'active' ? 'No ideas yet. Start capturing your thoughts above.' : 'No used ideas.'}
+            {filter === 'active' ? t('no_ideas') : t('no_used_ideas')}
           </div>
         )}
 
@@ -232,7 +234,7 @@ export default function IdeasView({ user, demoMode }: Props) {
             </div>
             <div style={s.cardActions}>
               {idea.used ? (
-                <span style={s.usedBadge}>✓ Used</span>
+                <span style={s.usedBadge}>{t('used')}</span>
               ) : (
                 <button
                   style={s.smallBtn}
@@ -241,7 +243,7 @@ export default function IdeasView({ user, demoMode }: Props) {
                   onMouseEnter={e => { e.currentTarget.style.color = 'var(--ok)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,.3)'; }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--t3)'; e.currentTarget.style.borderColor = 'var(--bd)'; }}
                 >
-                  Mark used
+                  {t('mark_used')}
                 </button>
               )}
             </div>
