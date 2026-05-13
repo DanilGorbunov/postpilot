@@ -5,6 +5,7 @@ import { api } from '../../convex/_generated/api';
 import { type User, clearSession } from '../lib/auth';
 import { type AppTab } from '../App';
 import { useUILang } from '../lib/i18n';
+import { useTheme } from '../lib/theme';
 import PostsView from './PostsView';
 import CalendarView from './CalendarView';
 import SettingsView from './SettingsView';
@@ -39,6 +40,7 @@ export default function AppLayout({ user, currentTab, onTabChange, onLogout, dem
   const [profileOpen, setProfileOpen] = useState(false);
   const [search, setSearch] = useState('');
   const { t, lang, setLang } = useUILang();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const prefs = useQuery(
     api.users.getPrefs,
@@ -459,6 +461,25 @@ export default function AppLayout({ user, currentTab, onTabChange, onLogout, dem
               <button style={langBtnStyle(lang === 'en')} onClick={() => setLang('en')}>EN</button>
               <button style={langBtnStyle(lang === 'uk')} onClick={() => setLang('uk')}>UK</button>
             </div>
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              style={{
+                background: 'var(--s2)',
+                border: '1px solid var(--bd)',
+                borderRadius: 'var(--r)',
+                color: 'var(--t2)',
+                cursor: 'pointer',
+                fontSize: 15,
+                padding: '5px 9px',
+                lineHeight: 1,
+                transition: 'all .15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--s3)'; e.currentTarget.style.color = 'var(--t1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--s2)'; e.currentTarget.style.color = 'var(--t2)'; }}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
           </div>
         </header>
 

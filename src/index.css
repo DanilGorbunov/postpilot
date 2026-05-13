@@ -21,6 +21,25 @@
   --r2: 12px;
 }
 
+html.light {
+  --bg: #f4f4f8;
+  --s1: #ffffff;
+  --s2: #ebebf2;
+  --s3: #dddde8;
+  --bd: rgba(0,0,0,.08);
+  --bd2: rgba(0,0,0,.14);
+  --t1: #0d0d14;
+  --t2: #3a3a52;
+  --t3: #7878a0;
+  --ac: #6b4fff;
+  --ac2: #5538ee;
+  --ok: #059669;
+  --ok2: rgba(5,150,105,.1);
+  --err: #dc2626;
+  --warn: #d97706;
+  --li: #0077b5;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -69,7 +88,7 @@ a:hover {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--s1);
+  background: var(--s2);
 }
 
 ::-webkit-scrollbar-thumb {
