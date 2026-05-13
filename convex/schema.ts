@@ -54,6 +54,7 @@ export default defineSchema({
         feedback: v.string(),
       })
     ),
+    translations: v.optional(v.any()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])

@@ -151,6 +151,22 @@ export const deletePost = mutation({
   },
 });
 
+export const saveTranslations = mutation({
+  args: {
+    entries: v.array(
+      v.object({ postId: v.id("posts"), lang: v.string(), content: v.string() })
+    ),
+  },
+  handler: async (ctx, { entries }) => {
+    for (const { postId, lang, content } of entries) {
+      const post = await ctx.db.get(postId);
+      if (!post) continue;
+      const existing: Record<string, string> = (post.translations as Record<string, string>) ?? {};
+      await ctx.db.patch(postId, { translations: { ...existing, [lang]: content } });
+    }
+  },
+});
+
 export const restorePost = mutation({
   args: {
     postId: v.id("posts"),

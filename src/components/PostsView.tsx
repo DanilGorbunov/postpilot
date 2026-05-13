@@ -402,7 +402,8 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const [scheduleDate, setScheduleDate] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
   const [displayLang, setDisplayLang] = useState('English');
-  const [translatedContent, setTranslatedContent] = useState<Record<string, string>>({});
+  // Local cache: postId → translated text (used while saving to Convex)
+  const [pendingTranslations, setPendingTranslations] = useState<Record<string, string>>({});
   const [translating, setTranslating] = useState(false);
   const { t } = useUILang();
 
@@ -422,6 +423,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
 
   const generatePostsAction = useAction(api.ai.generatePosts);
   const translatePostsAction = useAction(api.ai.translatePosts);
+  const saveTranslationsMut = useMutation(api.posts.saveTranslations);
   const createManyPosts = useMutation(api.posts.createManyPosts);
   const deletePostMut = useMutation(api.posts.deletePost);
   const setStatus = useMutation(api.posts.setStatus);
@@ -448,7 +450,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
     if (!prefs?.apikey || !hasApiKey) return;
     setGenerating(true);
     setGenerateError(null);
-    setTranslatedContent({});
+    setPendingTranslations({});
     setDisplayLang('English');
     try {
       const generated = await generatePostsAction({
@@ -513,29 +515,46 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
   const isLoading = !demoMode && rawPosts === undefined;
   const isEmpty = !isLoading && !generating && posts.length === 0;
 
-  const getDisplayContent = (postId: string, original: string) =>
-    translatedContent[postId] ?? original;
+  // Read translation from Convex (saved) or pending local cache
+  const getDisplayContent = (post: { _id: string; content: string; translations?: unknown }, langCode: string) => {
+    if (langCode === 'English') return post.content;
+    const saved = (post.translations as Record<string, string> | undefined)?.[langCode];
+    if (saved) return saved;
+    return pendingTranslations[post._id] ?? post.content;
+  };
 
   const handlePostLangChange = async (langCode: string) => {
     setDisplayLang(langCode);
-    if (langCode === 'English') {
-      setTranslatedContent({});
-      return;
-    }
+    if (langCode === 'English') return;
     if (!prefs?.apikey) return;
+
+    // Only translate posts that don't have a saved translation yet
+    const needTranslation = posts.filter(
+      p => !(p as any).translations?.[langCode]
+    );
+    if (needTranslation.length === 0) return;
+
     setTranslating(true);
     try {
-      const postsToTranslate = posts.map(p => ({ id: p._id, content: p.content }));
       const translated = await translatePostsAction({
         apiKey: prefs.apikey,
-        posts: postsToTranslate,
+        posts: needTranslation.map(p => ({ id: p._id, content: p.content })),
         targetLang: langCode,
       });
-      const map: Record<string, string> = {};
-      for (const tr of translated) {
-        map[tr.id] = tr.content;
-      }
-      setTranslatedContent(map);
+
+      // Show immediately via local cache
+      const pending: Record<string, string> = { ...pendingTranslations };
+      for (const tr of translated) pending[tr.id] = tr.content;
+      setPendingTranslations(pending);
+
+      // Persist to Convex
+      await saveTranslationsMut({
+        entries: translated.map(tr => ({
+          postId: tr.id as any,
+          lang: langCode,
+          content: tr.content,
+        })),
+      });
     } catch (e) {
       console.error('Translation failed:', e);
       setDisplayLang('English');
@@ -623,7 +642,7 @@ export default function PostsView({ user, prefs, search, demoMode, autoGenerate,
 
         {!generating && filteredPosts.map(post => {
           const isExpanded = expandedId === post._id;
-          const displayText = getDisplayContent(post._id, post.content);
+          const displayText = getDisplayContent(post as any, displayLang);
           const hashtags = (displayText.match(/#\w+/g) || []);
           const bodyText = displayText.replace(/(#\w+\s*)+$/, '').trimEnd();
           return (
